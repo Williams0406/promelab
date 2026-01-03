@@ -1,10 +1,8 @@
 {
   "build": {
-    "builder": "RAILPACK",
-    "buildCommand": "pip install -r requirements.txt"
+    "builder": "RAILPACK"
   },
   "deploy": {
-    "rootDirectory": "main",
-    "startCommand": "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn main.wsgi"
+    "startCommand": "python3 manage.py migrate && python3 manage.py collectstatic --noinput && gunicorn main.wsgi"
   }
 }
