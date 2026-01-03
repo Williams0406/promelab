@@ -27,7 +27,7 @@ router.register("cart-items", CartItemViewSet, basename="cart-items")
 router.register("admin/staff", StaffAdminViewSet, basename="admin-staff")
 
 # Rutas anidadas para ProductImage
-products_router = routers.NestedDefaultRouter(router, "admin/products", lookup="product")
+products_router = routers.NestedSimpleRouter(router, "admin/products", lookup="product")
 products_router.register("images", ProductImageAdminViewSet, basename="admin-product-images")
 
 urlpatterns = [
