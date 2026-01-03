@@ -11,3 +11,5 @@ drf-nested-routers
 whitenoise
 gunicorn
 dj-database-url
+django-cloudinary-storage
+cloudinary

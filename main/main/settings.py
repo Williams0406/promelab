@@ -38,6 +38,9 @@ INSTALLED_APPS = [
 
     'rest_framework.authtoken',
     "rest_framework_simplejwt.token_blacklist",
+
+    "cloudinary",
+    "cloudinary_storage",
 ]
 
 MIDDLEWARE = [
@@ -163,3 +166,5 @@ AUTHENTICATION_BACKENDS = [
 CSRF_TRUSTED_ORIGINS = [
     "https://*.railway.app",
 ]
+
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
