@@ -1,0 +1,10 @@
+pandas
+django
+openpyxl
+djangorestframework
+django-cors-headers
+djangorestframework-simplejwt
+psycopg2-binary
+datetime
+pillow
+djangorestframework-nested
