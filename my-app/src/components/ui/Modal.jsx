@@ -1,0 +1,48 @@
+import { X } from "lucide-react";
+
+export default function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  size = "lg",
+}) {
+  if (!open) return null;
+
+  const sizeClasses = {
+    sm: "max-w-md",
+    lg: "max-w-2xl",
+    xl: "max-w-4xl",
+    "2xl": "max-w-6xl",
+    full: "max-w-[95vw]",
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#002366]/40 px-4">
+      <div
+        className={`w-full ${sizeClasses[size]} max-h-[90vh] rounded-lg bg-white shadow-xl flex flex-col`}
+      >
+        
+        {/* HEADER */}
+        <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-4 shrink-0">
+          <h3 className="text-lg font-semibold text-[#002366]">
+            {title}
+          </h3>
+          
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-[#6B7280] hover:bg-[#F5F7FA] hover:text-[#002366] transition-colors duration-150"
+            aria-label="Cerrar"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* CONTENIDO SCROLLABLE */}
+        <div className="px-6 py-6 overflow-y-auto flex-1">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}

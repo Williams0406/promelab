@@ -1,0 +1,147 @@
+/* ======================================================
+   PROMELAB — Design System v2.0
+   Tailwind CSS + Tokens según Guía Maestra
+====================================================== */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ======================================================
+   DESIGN TOKENS
+====================================================== */
+:root {
+  /* Colores Core */
+  --color-primary: #002366;
+  --color-primary-hover: #001a4d;
+  --color-accent: #00a8cc;
+  --color-success: #2ecc71;
+  --color-danger: #e5533d;
+
+  /* Neutrales Funcionales */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f5f7fa;
+  --color-border: #e5e7eb;
+  --color-text: #374151;
+  --color-text-muted: #6b7280;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+
+  /* Transitions */
+  --transition-fast: 150ms ease-out;
+  --transition-base: 200ms ease-out;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg-primary: #0a0a0a;
+    --color-bg-secondary: #111827;
+    --color-border: #1f2933;
+    --color-text: #e5e7eb;
+    --color-text-muted: #9ca3af;
+  }
+}
+
+/* ======================================================
+   BASE STYLES
+====================================================== */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text);
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography */
+h1 { font-size: 2.25rem; font-weight: 700; color: var(--color-primary); }
+h2 { font-size: 1.875rem; font-weight: 600; color: var(--color-primary); }
+h3 { font-size: 1.25rem; font-weight: 600; color: var(--color-text); }
+p { font-size: 1rem; line-height: 1.6; color: var(--color-text); }
+small { font-size: 0.75rem; color: var(--color-text-muted); }
+
+/* Links */
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Selection */
+::selection { background-color: var(--color-accent); color: white; }
+
+/* ======================================================
+   COMPONENTS
+====================================================== */
+.container-promelab {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.card-promelab {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-primary);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+}
+
+.card-promelab:hover {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary {
+  @apply btn-base;
+  background-color: var(--color-primary);
+  color: white;
+  padding: 0.5rem 1rem;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.btn-ghost {
+  @apply btn-base;
+  background: transparent;
+  color: var(--color-text);
+  padding: 0.5rem 1rem;
+}
+
+.input-promelab {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text);
+}
+
+.input-promelab:focus {
+  border-color: var(--color-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent)/20;
+}
