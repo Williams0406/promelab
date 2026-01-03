@@ -7,7 +7,7 @@ djangorestframework-simplejwt
 psycopg2-binary
 datetime
 pillow
-django-rest-framework-nested
+drf-nested-routers
 whitenoise
 gunicorn
 dj-database-url
