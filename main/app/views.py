@@ -164,12 +164,14 @@ class ProductImageAdminViewSet(ModelViewSet):
         product_id = self.kwargs.get("product_pk")
         return ProductImage.objects.filter(product_id=product_id)
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+
     def perform_create(self, serializer):
         product_id = self.kwargs.get("product_pk")
         serializer.save(product_id=product_id)
-    
-    def get_serializer_context(self):
-        return {"request": self.request}
 
 # ======================
 # CART / ORDERS CLIENT
