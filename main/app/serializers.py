@@ -87,6 +87,11 @@ class VendorSerializer(serializers.ModelSerializer):
 # ======================
 # PRODUCT IMAGES
 # ======================
+class ProductImageCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ["id", "image", "is_main"]
+
 class ProductImageSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
 
@@ -95,7 +100,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
         fields = ["id", "image", "is_main"]
 
     def get_image(self, obj):
-        return obj.image.url
+        return obj.image.url if obj.image else None
 
 # ======================
 # PRODUCT (PUBLIC)

@@ -28,7 +28,7 @@ from .serializers import (
     VendorSerializer, ProductSerializer, ProductAdminSerializer, ProductImageSerializer,
     CartSerializer, OrderSerializer, OrderAdminSerializer, BannerSerializer,
     ContentBlockSerializer, ClientRegisterSerializer, AddToCartSerializer, CartItemSerializer,
-    StaffCreateSerializer
+    StaffCreateSerializer, ProductImageCreateSerializer
 )
 from .permissions import IsAdmin, IsStaff, IsStaffOrReadOnly, IsClient
 
@@ -156,22 +156,21 @@ class ProductAdminViewSet(ModelViewSet):
 # ======================
 class ProductImageAdminViewSet(ModelViewSet):
     queryset = ProductImage.objects.all()
-    serializer_class = ProductImageSerializer
     permission_classes = [IsStaff]
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        product_id = self.kwargs.get("product_pk")
-        return ProductImage.objects.filter(product_id=product_id)
+        return ProductImage.objects.filter(
+            product_id=self.kwargs.get("product_pk")
+        )
 
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context["request"] = self.request
-        return context
+    def get_serializer_class(self):
+        if self.action in ["create", "update", "partial_update"]:
+            return ProductImageCreateSerializer
+        return ProductImageSerializer
 
     def perform_create(self, serializer):
-        product_id = self.kwargs.get("product_pk")
-        serializer.save(product_id=product_id)
+        serializer.save(product_id=self.kwargs.get("product_pk"))
 
 # ======================
 # CART / ORDERS CLIENT
