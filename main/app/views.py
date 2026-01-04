@@ -28,7 +28,7 @@ from .serializers import (
     VendorSerializer, ProductSerializer, ProductAdminSerializer, ProductImageSerializer,
     CartSerializer, OrderSerializer, OrderAdminSerializer, BannerSerializer,
     ContentBlockSerializer, ClientRegisterSerializer, AddToCartSerializer, CartItemSerializer,
-    StaffCreateSerializer, ProductImageCreateSerializer
+    StaffCreateSerializer, ProductImageCreateSerializer, BannerCreateUpdateSerializer
 )
 from .permissions import IsAdmin, IsStaff, IsStaffOrReadOnly, IsClient
 
@@ -278,18 +278,21 @@ class OrderAdminViewSet(ModelViewSet):
 # BANNERS / CONTENT
 # ======================
 class BannerViewSet(ModelViewSet):
-    serializer_class = BannerSerializer
     permission_classes = [IsStaffOrReadOnly]
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
         today = timezone.now().date()
-
         return Banner.objects.filter(
             is_active=True,
             start_date__lte=today,
             end_date__gte=today
         )
+
+    def get_serializer_class(self):
+        if self.action in ["create", "update", "partial_update"]:
+            return BannerCreateUpdateSerializer
+        return BannerSerializer
 
     def get_serializer_context(self):
         return {"request": self.request}

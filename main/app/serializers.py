@@ -233,6 +233,11 @@ class AddressSerializer(serializers.ModelSerializer):
 # ======================
 # CMS
 # ======================
+class BannerCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Banner
+        fields = "__all__"
+
 class BannerSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
 
@@ -241,9 +246,7 @@ class BannerSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_image(self, obj):
-        if obj.image:
-            return obj.image.url
-        return None
+        return obj.image.url if obj.image else None
 
 
 class ContentBlockSerializer(serializers.ModelSerializer):
