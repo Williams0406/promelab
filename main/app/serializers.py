@@ -81,15 +81,14 @@ class VendorSerializer(serializers.ModelSerializer):
 
     def get_logo(self, obj):
         if obj.logo:
-            request = self.context.get("request")
-            return request.build_absolute_uri(obj.logo.url)
+            return obj.logo.url
         return None
 
 # ======================
 # PRODUCT IMAGES
 # ======================
 class ProductImageSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField()
+    image = serializers.ImageField(use_url=True)
 
     class Meta:
         model = ProductImage
@@ -137,8 +136,7 @@ class ProductSerializer(serializers.ModelSerializer):
     def get_main_image(self, obj):
         image = obj.productimage_set.filter(is_main=True).first()
         if image:
-            request = self.context.get("request")
-            return request.build_absolute_uri(image.image.url)
+            return image.image.url
         return None
 
 
@@ -228,11 +226,12 @@ class AddressSerializer(serializers.ModelSerializer):
 # CMS
 # ======================
 class BannerSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField()
+    image = serializers.ImageField(use_url=True)
 
     class Meta:
         model = Banner
         fields = "__all__"
+
 
 class ContentBlockSerializer(serializers.ModelSerializer):
     class Meta:
