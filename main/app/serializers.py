@@ -88,11 +88,14 @@ class VendorSerializer(serializers.ModelSerializer):
 # PRODUCT IMAGES
 # ======================
 class ProductImageSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(use_url=True)
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductImage
         fields = ["id", "image", "is_main"]
+
+    def get_image(self, obj):
+        return obj.image.url
 
 # ======================
 # PRODUCT (PUBLIC)
@@ -226,11 +229,16 @@ class AddressSerializer(serializers.ModelSerializer):
 # CMS
 # ======================
 class BannerSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(use_url=True)
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = Banner
         fields = "__all__"
+
+    def get_image(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
 
 
 class ContentBlockSerializer(serializers.ModelSerializer):
