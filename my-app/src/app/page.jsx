@@ -1,5 +1,5 @@
-import HomePage from "./(public)/page";
+import HomePage from "@/components/public/HomePage";
 
-export default function RootPage() {
+export default function Page() {
   return <HomePage />;
 }
