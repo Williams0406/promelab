@@ -4,6 +4,8 @@ import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 
 import useCart from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 import CartItem from "@/components/cart/CartItem";
 import CartSummary from "@/components/cart/CartSummary";
 import EmptyState from "@/components/common/EmptyState";
@@ -11,8 +13,17 @@ import Spinner from "@/components/ui/Spinner";
 
 export default function CartPage() {
   const { items, initialized } = useCart();
+  const { loading, isClient } = useAuth();
+  const router = useRouter();
 
-  if (!initialized) {
+  // 🔐 Guard de acceso por rol
+  if (!loading && !isClient) {
+    router.replace("/"); // o /login si prefieres
+    return null;
+  }
+
+  // ⏳ Esperar auth + carrito
+  if (loading || !initialized) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Spinner size="lg" context="Cargando carrito..." />

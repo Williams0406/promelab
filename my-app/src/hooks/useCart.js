@@ -17,7 +17,7 @@ export function CartProvider({ children }) {
      LOAD CART FROM BACKEND
   ========================= */
   const loadCart = async () => {
-    if (!isAuthenticated || !isClient) {
+    if (!isAuthenticated) {
       setItems([]);
       setInitialized(true);
       return;
