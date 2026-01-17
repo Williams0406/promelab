@@ -189,7 +189,7 @@ export default function HomePage() {
                 <dl className="space-y-4 text-sm">
                   <div className="flex gap-3">
                     <dt className="font-medium text-[#002366] w-24">Teléfono:</dt>
-                    <dd className="text-[#374151]">+51 962 162 027</dd>
+                    <dd className="text-[#374151]">+51 972 719 164</dd>
                   </div>
                   <div className="flex gap-3">
                     <dt className="font-medium text-[#002366] w-24">Email:</dt>
@@ -217,7 +217,7 @@ export default function HomePage() {
 
                 {/* CTA Primary */}
                 <Link
-                  href="https://wa.me/51962162027"
+                  href="https://wa.me/51972719164"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#002366] text-white text-sm font-medium rounded-lg hover:bg-[#003380] transition-colors duration-150"

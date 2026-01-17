@@ -22,16 +22,20 @@ export default function CartSummary() {
 
   const handleCreateOrder = async () => {
     setError(null);
-    
+
     try {
       setLoading(true);
-      await clientAPI.createOrder();
 
-      // Refrescar carrito (queda vacío)
+      // 1️⃣ Crear orden
+      const res = await clientAPI.createOrder();
+      const orderId = res.data.id;
+
+      // 2️⃣ Vaciar / refrescar carrito
       await loadCart();
 
-      // Redirigir a órdenes
-      router.push("/orders");
+      // 3️⃣ Ir a página de pago
+      router.push(`/orders/${orderId}/pay`);
+
     } catch (err) {
       console.error("Error creando la orden:", err);
       setError(
