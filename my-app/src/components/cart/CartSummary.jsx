@@ -27,14 +27,9 @@ export default function CartSummary() {
       setLoading(true);
 
       // 1️⃣ Crear orden
-      const res = await clientAPI.createOrder();
-      const orderId = res.data.id;
-
-      // 2️⃣ Vaciar / refrescar carrito
-      await loadCart();
-
-      // 3️⃣ Ir a página de pago
-      router.push(`/orders/${orderId}/pay`);
+      const handleCheckout = () => {
+        router.push("/checkout/pay");
+      };
 
     } catch (err) {
       console.error("Error creando la orden:", err);
@@ -96,11 +91,10 @@ export default function CartSummary() {
       <div className="space-y-3 mt-6">
         {/* CTA Primary — Solo 1 */}
         <Button
-          className="w-full h-11 bg-[#002366] text-white hover:bg-[#003380] transition-colors duration-150"
-          disabled={loading}
-          onClick={handleCreateOrder}
+          className="w-full h-11 bg-[#002366] text-white hover:bg-[#003380]"
+          onClick={handleCheckout}
         >
-          {loading ? "Procesando..." : "Crear orden de compra"}
+          Continuar al pago
         </Button>
 
         {/* CTA Secondary */}
