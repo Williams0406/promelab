@@ -73,20 +73,25 @@ class CategoryAdminSerializer(serializers.ModelSerializer):
 # VENDOR
 # ======================
 class VendorSerializer(serializers.ModelSerializer):
-    logo = serializers.SerializerMethodField()
+    logo = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Vendor
         fields = "__all__"
 
-    def get_logo(self, obj):
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
         request = self.context.get("request")
-        if obj.logo and hasattr(obj.logo, "url"):
-            url = obj.logo.url
-            if request:
-                return request.build_absolute_uri(url)
-            return url
-        return None
+
+        if instance.logo and hasattr(instance.logo, "url"):
+            data["logo"] = (
+                request.build_absolute_uri(instance.logo.url)
+                if request else instance.logo.url
+            )
+        else:
+            data["logo"] = None
+
+        return data
 
 # ======================
 # PRODUCT IMAGES
