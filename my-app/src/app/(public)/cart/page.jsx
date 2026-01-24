@@ -13,12 +13,17 @@ import Spinner from "@/components/ui/Spinner";
 
 export default function CartPage() {
   const { items, initialized } = useCart();
-  const { loading, isClient } = useAuth();
+  const { user, loading, isClient } = useAuth();
   const router = useRouter();
 
   // 🔐 Guard de acceso por rol
-  if (!loading && !isClient) {
-    router.replace("/"); // o /login si prefieres
+  if (!loading && !user) {
+    router.replace("/login");
+    return null;
+  }
+
+  if (!loading && user && !isClient) {
+    router.replace("/");
     return null;
   }
 
