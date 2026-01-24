@@ -155,11 +155,6 @@ export default function ProductDetailPage() {
                   <span className="w-2 h-2 rounded-full bg-[#2ECC71]" />
                   Disponible
                 </span>
-                {product.stock <= 10 && (
-                  <span className="text-sm text-[#F59E0B]">
-                    Solo {product.stock} unidades
-                  </span>
-                )}
               </div>
             ) : (
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FEF2F2] text-sm font-medium text-[#E5533D]">

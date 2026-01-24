@@ -78,13 +78,6 @@ export default function ProductCard({ product }) {
 
           <AddToCartButton product={product} size="sm" />
         </div>
-
-        {/* Indicador de stock bajo */}
-        {product.stock !== undefined && product.stock > 0 && product.stock <= 10 && (
-          <p className="text-xs text-[#F59E0B] mt-2">
-            Solo {product.stock} disponibles
-          </p>
-        )}
       </div>
     </div>
   );
