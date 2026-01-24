@@ -15,6 +15,7 @@ export default function VendorForm({
     contact_email: initialData?.contact_email || "",
     phone: initialData?.phone || "",
     logo: null,
+    is_active: initialData?.is_active ?? true,
   });
 
   const [preview, setPreview] = useState(initialData?.logo || null);
@@ -22,16 +23,16 @@ export default function VendorForm({
   const [submitting, setSubmitting] = useState(false);
 
   function handleChange(e) {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
 
     // Limpiar error del campo
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
+      setErrors((prev) => ({ ...prev, [name]: null }));
     }
 
     setForm((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   }
 
@@ -72,6 +73,7 @@ export default function VendorForm({
       formData.append("name", form.name);
       formData.append("contact_email", form.contact_email);
       formData.append("phone", form.phone);
+      formData.append("is_active", form.is_active ? "true" : "false");
 
       if (form.logo) {
         formData.append("logo", form.logo);
@@ -152,6 +154,37 @@ export default function VendorForm({
             <p className="text-sm text-[#E5533D]">{errors.submit}</p>
           </div>
         )}
+        {/* Estado */}
+        <div className="flex items-center justify-between rounded-lg border border-[#E5E7EB] p-4">
+          <div>
+            <p className="text-sm font-medium text-[#374151]">
+              Proveedor activo
+            </p>
+            <p className="text-xs text-[#6B7280]">
+              Visible en la web pública
+            </p>
+          </div>
+
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              name="is_active"
+              checked={form.is_active}
+              onChange={handleChange}
+              className="sr-only"
+            />
+            <div
+              className={`w-11 h-6 rounded-full transition ${
+                form.is_active ? "bg-green-600" : "bg-gray-300"
+              }`}
+            >
+              <div
+                className={`h-5 w-5 bg-white rounded-full shadow transform transition
+                  ${form.is_active ? "translate-x-5" : "translate-x-1"}`}
+              />
+            </div>
+          </label>
+        </div>
 
         {/* Logo */}
         <div>
