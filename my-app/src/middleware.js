@@ -14,7 +14,7 @@ const PUBLIC_ROUTES = [
 ];
 
 const ADMIN_BASE = "/admin";
-const CLIENT_BASE = ["/cart", "/orders"];
+const CLIENT_BASE = ["/cart", "/orders", "/checkout"];
 
 /**
  * ============================

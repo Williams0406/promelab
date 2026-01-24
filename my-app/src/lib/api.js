@@ -121,6 +121,8 @@ export const publicAPI = {
   // CMS
   getBanners: () => api.get("/banners/"),
   getContentBlock: (key) => api.get(`/content/?key=${key}`),
+
+  getVendors: () => api.get("/vendors/"),
 };
 
 /**
@@ -142,6 +144,12 @@ export const clientAPI = {
   createOrder: () => api.post("/orders/"),
   getOrders: () => api.get("/orders/"),
   getOrder: (id) => api.get(`/orders/${id}/`),
+
+  // Payments
+  createCulqiCharge: (token) =>
+    api.post("/payments/culqi/charge/", {
+      token,
+    }),
 };
 
 /**

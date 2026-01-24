@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Search, ShoppingCart, User, Menu, LayoutDashboard, X } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, LayoutDashboard, X, Instagram, Facebook } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,9 +18,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Logo from "@/components/public/Logo";
 import { useRouter } from "next/navigation";
+import useCart from "@/hooks/useCart";
 
 export default function Header() {
   const { user, isAdmin, isStaff, isClient } = useAuth();
+  const { items, total } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -104,19 +106,44 @@ export default function Header() {
               ventas@promelab.com
             </span>
           </div>
-          <div className="flex gap-6 text-[#374151]">
+          <div className="flex items-center gap-6 text-[#374151]">
             <Link href="/help" className="hover:text-[#002366] transition-colors duration-150">
               Centro de ayuda
             </Link>
-            <Link href="/quote" className="hover:text-[#002366] transition-colors duration-150">
-              Cotizaciones
+            <Link href="/about" className="hover:text-[#002366] transition-colors duration-150">
+              Nosotros
             </Link>
+            <Link href="/contact" className="hover:text-[#002366] transition-colors duration-150">
+              Contacto
+            </Link>
+
+            {/* Redes sociales — accesibles pero no intrusivas */}
+            <div className="flex items-center gap-3 ml-2">
+              <a
+                href="https://www.instagram.com/promelab"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram PROMELAB"
+                className="hover:text-[#E1306C] transition-colors duration-150"
+              >
+                <Instagram className="h-4 w-4" />
+              </a>
+              <a
+                href="https://www.facebook.com/promelab"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook PROMELAB"
+                className="hover:text-[#1877F2] transition-colors duration-150"
+              >
+                <Facebook className="h-4 w-4" />
+              </a>
+            </div>
           </div>
         </div>
       </div>
 
       {/* MAIN HEADER */}
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 py-2">
         <div className="flex h-16 items-center justify-between gap-4">
           
           {/* LOGO — Discreto, no protagonista */}
@@ -254,9 +281,13 @@ export default function Header() {
               className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#F5F7FA] transition-colors duration-150"
             >
               <ShoppingCart className="h-4 w-4 text-[#002366]" />
-              <span className="hidden md:block text-sm font-medium text-[#374151]">
-                Carrito
-              </span>
+
+              {/* Total del carrito */}
+              {items.length > 0 && (
+                <span className="hidden md:block text-sm font-semibold text-[#002366]">
+                  S/ {total.toFixed(2)}
+                </span>
+              )}
             </Link>
 
             {/* MOBILE MENU TOGGLE */}
@@ -343,11 +374,19 @@ export default function Header() {
                 Centro de ayuda
               </Link>
               <Link
-                href="/quote"
+                href="/about"
                 className="block px-3 py-2 text-sm text-[#6B7280] hover:bg-[#F5F7FA] rounded-lg transition-colors duration-150"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Cotizaciones
+                Nosotros
+              </Link>
+
+              <Link
+                href="/contact"
+                className="block px-3 py-2 text-sm text-[#6B7280] hover:bg-[#F5F7FA] rounded-lg transition-colors duration-150"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Contacto
               </Link>
             </div>
           </nav>

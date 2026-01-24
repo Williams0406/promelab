@@ -14,8 +14,10 @@ export default function VendorForm({
     name: initialData?.name || "",
     contact_email: initialData?.contact_email || "",
     phone: initialData?.phone || "",
+    logo: null,
   });
 
+  const [preview, setPreview] = useState(initialData?.logo || null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -51,19 +53,36 @@ export default function VendorForm({
     return Object.keys(newErrors).length === 0;
   }
 
+  function handleFileChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setForm((prev) => ({ ...prev, logo: file }));
+    setPreview(URL.createObjectURL(file));
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-
     if (!validate()) return;
 
     setSubmitting(true);
 
     try {
-      await onSubmit(form);
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("contact_email", form.contact_email);
+      formData.append("phone", form.phone);
+
+      if (form.logo) {
+        formData.append("logo", form.logo);
+      }
+
+      await onSubmit(formData);
       onClose();
     } catch (err) {
-      setErrors({ 
-        submit: err.response?.data?.detail || "No se pudo guardar el proveedor" 
+      setErrors({
+        submit:
+          err.response?.data?.detail || "No se pudo guardar el proveedor",
       });
     } finally {
       setSubmitting(false);
@@ -133,6 +152,37 @@ export default function VendorForm({
             <p className="text-sm text-[#E5533D]">{errors.submit}</p>
           </div>
         )}
+
+        {/* Logo */}
+        <div>
+          <label className="block text-sm font-medium text-[#374151] mb-2">
+            Logo del proveedor
+          </label>
+
+          <div className="flex items-center gap-4">
+            <label className="cursor-pointer inline-flex items-center px-4 py-2 rounded-lg border border-[#E5E7EB] bg-white text-sm hover:bg-[#F5F7FA]">
+              Subir imagen
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </label>
+
+            {preview && (
+              <img
+                src={preview}
+                alt="Logo preview"
+                className="h-14 w-14 object-contain rounded-md border"
+              />
+            )}
+          </div>
+
+          <p className="text-xs text-[#6B7280] mt-1">
+            PNG o JPG · Fondo transparente recomendado
+          </p>
+        </div>
 
         {/* Actions */}
         <div className="flex justify-end gap-3 pt-4 border-t border-[#E5E7EB]">

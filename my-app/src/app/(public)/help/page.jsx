@@ -462,7 +462,7 @@ export default function HelpPage() {
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
-                href="https://wa.me/51962162027"
+                href="https://wa.me/5197719164"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center px-6 py-3 bg-[#002366] text-white text-sm font-medium rounded-lg hover:bg-[#003380] transition-colors duration-150"

@@ -8,12 +8,15 @@ import { ChevronRight, Package, Truck, Shield } from "lucide-react";
 import Spinner from "@/components/ui/Spinner";
 import AddToCartButton from "@/components/cart/AddToCartButton";
 import ProductImages from "@/components/products/ProductImages";
+import ProductGrid from "@/components/products/ProductGrid";
 import { publicAPI } from "@/lib/api";
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [loadingRelated, setLoadingRelated] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -25,6 +28,27 @@ export default function ProductDetailPage() {
       .catch(() => setProduct(null))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  useEffect(() => {
+    if (!product?.category_id) return;
+
+    setLoadingRelated(true);
+
+    publicAPI
+      .getProducts({
+        category: product.category_id, // ✅ UUID
+        page_size: 5,
+      })
+      .then((res) => {
+        const results = res.data?.results || [];
+
+        setRelatedProducts(
+          results.filter((p) => p.slug !== product.slug).slice(0, 4)
+        );
+      })
+      .catch(() => setRelatedProducts([]))
+      .finally(() => setLoadingRelated(false));
+  }, [product]);
 
   // Loading
   if (loading) {
@@ -103,13 +127,6 @@ export default function ProductDetailPage() {
           <h1 className="text-3xl font-semibold text-[#002366] mb-4">
             {product.name}
           </h1>
-
-          {/* Proveedor */}
-          {product.vendor_name && (
-            <p className="text-sm text-[#6B7280] mb-6">
-              <span className="font-medium">Proveedor:</span> {product.vendor_name}
-            </p>
-          )}
 
           {/* Precio */}
           <div className="flex items-end gap-4 mb-6 pb-6 border-b border-[#E5E7EB]">
@@ -209,6 +226,37 @@ export default function ProductDetailPage() {
             )}
         </div>
       </div>
+      {/* PRODUCTOS RELACIONADOS */}
+      {relatedProducts.length > 0 && (
+        <section className="mt-20 border-t border-[#E5E7EB] pt-16">
+          <div className="container mx-auto px-4">
+            <div className="mb-10">
+              <span className="inline-block mb-2 text-xs font-semibold text-[#00A8CC] uppercase tracking-wide">
+                También te puede interesar
+              </span>
+              <h2 className="text-2xl md:text-3xl font-bold text-[#002366]">
+                Productos relacionados
+              </h2>
+            </div>
+
+            <ProductGrid
+              products={relatedProducts}
+              loading={loadingRelated}
+              variant="preview"
+            />
+
+            <div className="mt-10 text-center">
+              <Link
+                href="/products"
+                className="inline-flex items-center gap-2 text-sm font-medium text-[#002366] hover:text-[#00A8CC]"
+              >
+                Ver más productos
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
     </section>
   );
 }

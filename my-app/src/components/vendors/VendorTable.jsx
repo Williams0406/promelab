@@ -19,7 +19,7 @@ export default function VendorTable({ vendors, onEdit, onDelete }) {
       <table className="w-full text-sm">
         <thead className="bg-[#F5F7FA] border-b border-[#E5E7EB]">
           <tr>
-            <th className="px-4 py-3 text-left font-semibold text-[#374151]">Nombre</th>
+            <th className="px-4 py-3 text-left font-semibold text-[#374151]">Proveedor</th>
             <th className="px-4 py-3 text-left font-semibold text-[#374151]">Email</th>
             <th className="px-4 py-3 text-left font-semibold text-[#374151]">Teléfono</th>
             <th className="px-4 py-3 text-right font-semibold text-[#374151]">Acciones</th>
@@ -35,7 +35,23 @@ export default function VendorTable({ vendors, onEdit, onDelete }) {
               } hover:bg-[#F5F7FA] transition-colors duration-150`}
             >
               <td className="px-4 py-3">
-                <span className="font-medium text-[#002366]">{vendor.name}</span>
+                <div className="flex items-center gap-3">
+                  {vendor.logo ? (
+                    <img
+                      src={vendor.logo}
+                      alt={vendor.name}
+                      className="h-10 w-10 object-contain rounded-md border bg-white"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 flex items-center justify-center rounded-md border bg-[#F5F7FA]">
+                      <Building2 className="h-5 w-5 text-[#9CA3AF]" />
+                    </div>
+                  )}
+
+                  <span className="font-medium text-[#002366]">
+                    {vendor.name}
+                  </span>
+                </div>
               </td>
 
               <td className="px-4 py-3 text-[#374151]">

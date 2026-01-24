@@ -13,3 +13,4 @@ gunicorn
 dj-database-url
 django-cloudinary-storage
 cloudinary
+mercadopago

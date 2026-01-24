@@ -164,9 +164,29 @@ class Order(models.Model):
         DELIVERED = "DELIVERED", "Entregado"
         CANCELLED = "CANCELLED", "Cancelado"
 
-    status = models.CharField(max_length=20, choices=Status.choices)
-    total = models.DecimalField(max_digits=12, decimal_places=2)
+    class PaymentMethod(models.TextChoices):
+        CULQI = "culqi", "Culqi"
+        MANUAL = "manual", "Manual"
 
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.CREATED
+    )
+
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.MANUAL
+    )
+
+    payment_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    total = models.DecimalField(max_digits=12, decimal_places=2)
     internal_notes = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -208,3 +228,4 @@ class EventLog(models.Model):
     event_type = models.CharField(max_length=100)
     metadata = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+

@@ -113,6 +113,7 @@ class ProductSerializer(serializers.ModelSerializer):
     main_image = serializers.SerializerMethodField()
     category_name = serializers.CharField(source="category.name", read_only=True)
     vendor_name = serializers.CharField(source="vendor.name", read_only=True)
+    category_id = serializers.UUIDField(source="category.id", read_only=True)
 
     class Meta:
         model = Product
@@ -131,6 +132,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
             # EXTRAS
             "technical_specs",
+
+            "category_id",
 
             # RELACIONES
             "category_name",

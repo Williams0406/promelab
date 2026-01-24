@@ -1,4 +1,5 @@
 # app/views.py
+import os
 from rest_framework.viewsets import ReadOnlyModelViewSet, ModelViewSet
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -18,6 +19,12 @@ from django.contrib.auth import get_user_model
 from datetime import timedelta
 from django.db.models.functions import TruncDate
 from django.db.models.deletion import ProtectedError
+import json
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+from django.utils.decorators import method_decorator
+from django.conf import settings
+import requests
 
 from .models import (
     User, Category, Vendor, Product, ProductImage,
@@ -479,3 +486,92 @@ class AdminDashboardView(APIView):
             "catalog": catalog_data,
             "cart": cart_data,
         })
+
+class CulqiChargeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        token = request.data.get("token")
+
+        if not token:
+            return Response(
+                {"detail": "Token de pago requerido"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        cart = Cart.objects.filter(user=user).first()
+        if not cart or not cart.cartitem_set.exists():
+            return Response(
+                {"detail": "El carrito está vacío"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        total = sum(
+            item.price_snapshot * item.quantity
+            for item in cart.cartitem_set.all()
+        )
+
+        amount = int(total * 100)  # céntimos
+
+        # 1️⃣ Cobro a Culqi
+        response = requests.post(
+            "https://api.culqi.com/v2/charges",
+            headers={
+                "Authorization": f"Bearer {settings.CULQI_SECRET_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "amount": amount,
+                "currency_code": "PEN",
+                "email": user.email,
+                "source_id": token,
+                "description": "Pedido Castromonte"
+            }
+        )
+
+        data = response.json()
+
+        if response.status_code != 201:
+            return Response(
+                {
+                    "detail": "Pago rechazado",
+                    "culqi": data
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 2️⃣ Crear Orden
+        order = Order.objects.create(
+            user=user,
+            status=Order.Status.PAID,
+            total=total,
+            payment_method=Order.PaymentMethod.CULQI,
+            payment_id=data["id"]
+        )
+
+        for item in cart.cartitem_set.select_related("product"):
+            OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                quantity=item.quantity,
+                price=item.price_snapshot
+            )
+
+            item.product.stock -= item.quantity
+            item.product.save()
+
+        cart.cartitem_set.all().delete()
+
+        return Response(
+            {
+                "order_id": order.id,
+                "status": "PAID"
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+class VendorPublicViewSet(ReadOnlyModelViewSet):
+    queryset = Vendor.objects.filter(is_active=True)
+    serializer_class = VendorSerializer
+    permission_classes = [AllowAny]

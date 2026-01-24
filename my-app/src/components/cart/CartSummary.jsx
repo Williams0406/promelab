@@ -20,27 +20,9 @@ export default function CartSummary() {
   const shipping = 0; // Envío gratuito o calcular según lógica
   const finalTotal = subtotal + shipping;
 
-  const handleCreateOrder = async () => {
-    setError(null);
-
-    try {
-      setLoading(true);
-
-      // 1️⃣ Crear orden
-      const handleCheckout = () => {
+  const handleCheckout = () => {
         router.push("/checkout/pay");
       };
-
-    } catch (err) {
-      console.error("Error creando la orden:", err);
-      setError(
-        err.response?.data?.detail || 
-        "No se pudo crear la orden. Intenta nuevamente."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="rounded-lg border border-[#E5E7EB] bg-white p-6 shadow-sm sticky top-24">
