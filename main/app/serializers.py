@@ -80,8 +80,12 @@ class VendorSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_logo(self, obj):
-        if obj.logo:
-            return obj.logo.url
+        request = self.context.get("request")
+        if obj.logo and hasattr(obj.logo, "url"):
+            url = obj.logo.url
+            if request:
+                return request.build_absolute_uri(url)
+            return url
         return None
 
 # ======================
