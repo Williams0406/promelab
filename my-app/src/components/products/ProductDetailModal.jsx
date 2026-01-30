@@ -44,7 +44,6 @@ export default function ProductDetailModal({ productId, onClose, onSaved }) {
         description: product.description,
         price: product.price,
         promo_price: product.promo_price || null,
-        stock: product.stock,
         is_active: product.is_active,
         is_featured: product.is_featured,
         technical_specs: product.technical_specs,
@@ -163,7 +162,7 @@ export default function ProductDetailModal({ productId, onClose, onSaved }) {
               />
             </div>
 
-            {/* Precios y stock */}
+            {/* Precios */}
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#374151] mb-2">
@@ -198,21 +197,6 @@ export default function ProductDetailModal({ productId, onClose, onSaved }) {
                   }
                   className="h-10 border-[#E5E7EB]"
                   placeholder="Opcional"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#374151] mb-2">
-                  Stock
-                </label>
-                <Input
-                  type="number"
-                  value={product.stock}
-                  disabled={!editing}
-                  onChange={(e) =>
-                    setProduct({ ...product, stock: parseInt(e.target.value) })
-                  }
-                  className="h-10 border-[#E5E7EB]"
                 />
               </div>
             </div>

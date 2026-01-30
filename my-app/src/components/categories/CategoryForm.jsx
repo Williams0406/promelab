@@ -84,7 +84,7 @@ export default function CategoryForm({
               setName(e.target.value);
               if (errors.name) setErrors(prev => ({ ...prev, name: null }));
             }}
-            className={`h-10 ${errors.name ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+            className={`h-10 placeholder:text-[#9CA3AF] ${errors.name ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
             disabled={loading}
           />
           {errors.name && (

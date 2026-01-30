@@ -145,23 +145,6 @@ export default function AdminProductsPage() {
       ),
     },
     {
-      key: "stock",
-      label: "Stock",
-      cell: (row) => (
-        <span
-          className={`font-medium ${
-            row.original.stock === 0
-              ? "text-[#E5533D]"
-              : row.original.stock < 10
-              ? "text-[#F59E0B]"
-              : "text-[#2ECC71]"
-          }`}
-        >
-          {row.original.stock}
-        </span>
-      ),
-    },
-    {
       key: "actions",
       label: "Acciones",
       cell: (row) => (

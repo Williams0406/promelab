@@ -136,9 +136,6 @@ class ProductSerializer(serializers.ModelSerializer):
             "price",
             "promo_price",
 
-            # STOCK
-            "stock",
-
             # EXTRAS
             "technical_specs",
 
@@ -182,7 +179,6 @@ class ProductAdminSerializer(serializers.ModelSerializer):
             "technical_specs",
             "price",
             "promo_price",
-            "stock",
             "category",
             "category_name",
             "vendor",
@@ -193,6 +189,7 @@ class ProductAdminSerializer(serializers.ModelSerializer):
             "updated_at",
             "images",
         ]
+        read_only_fields = ["slug"]
 
 # ======================
 # CART

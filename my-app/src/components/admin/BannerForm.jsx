@@ -119,7 +119,7 @@ export default function BannerForm({ onSuccess }) {
           placeholder="Ej: Equipos certificados ISO 9001"
           value={form.title}
           onChange={handleChange}
-          className={`h-10 ${errors.title ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+          className={`h-10 placeholder:text-[#9CA3AF] ${errors.title ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
         />
         {errors.title && (
           <p className="text-xs text-[#E5533D] mt-1.5">{errors.title}</p>
@@ -136,7 +136,7 @@ export default function BannerForm({ onSuccess }) {
           placeholder="Ej: Respaldo técnico garantizado"
           value={form.tagline}
           onChange={handleChange}
-          className="h-10 border-[#E5E7EB]"
+          className="h-10 placeholder:text-[#9CA3AF] border-[#E5E7EB]"
         />
       </div>
 
@@ -150,7 +150,7 @@ export default function BannerForm({ onSuccess }) {
           name="image"
           accept="image/*"
           onChange={handleChange}
-          className={`h-10 ${errors.image ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+          className={`h-10 placeholder:text-[#9CA3AF] ${errors.image ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
         />
         {errors.image && (
           <p className="text-xs text-[#E5533D] mt-1.5">{errors.image}</p>
@@ -171,7 +171,7 @@ export default function BannerForm({ onSuccess }) {
           placeholder="https://promelab.com/productos"
           value={form.link}
           onChange={handleChange}
-          className="h-10 border-[#E5E7EB]"
+          className="h-10 placeholder:text-[#9CA3AF] border-[#E5E7EB]"
         />
       </div>
 
@@ -186,7 +186,7 @@ export default function BannerForm({ onSuccess }) {
             name="start_date"
             value={form.start_date}
             onChange={handleChange}
-            className={`h-10 ${errors.start_date ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+            className={`h-10 placeholder:text-[#9CA3AF] ${errors.start_date ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
           />
           {errors.start_date && (
             <p className="text-xs text-[#E5533D] mt-1.5">{errors.start_date}</p>
@@ -202,7 +202,7 @@ export default function BannerForm({ onSuccess }) {
             name="end_date"
             value={form.end_date}
             onChange={handleChange}
-            className={`h-10 ${errors.end_date ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+            className={`h-10 placeholder:text-[#9CA3AF] ${errors.end_date ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
           />
           {errors.end_date && (
             <p className="text-xs text-[#E5533D] mt-1.5">{errors.end_date}</p>

@@ -84,7 +84,6 @@ export default function ProductDetailPage() {
 
   const hasPromo = product.promo_price && product.promo_price < product.price;
   const displayPrice = hasPromo ? product.promo_price : product.price;
-  const inStock = product.stock > 0;
 
   return (
     <section className="container mx-auto px-4 py-10 lg:px-8">
@@ -149,19 +148,12 @@ export default function ProductDetailPage() {
 
           {/* Stock */}
           <div className="mb-6">
-            {inStock ? (
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#E6F4F1] text-sm font-medium text-[#0F766E]">
-                  <span className="w-2 h-2 rounded-full bg-[#2ECC71]" />
-                  Disponible
-                </span>
-              </div>
-            ) : (
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FEF2F2] text-sm font-medium text-[#E5533D]">
-                <span className="w-2 h-2 rounded-full bg-[#E5533D]" />
-                Sin stock
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#E6F4F1] text-sm font-medium text-[#0F766E]">
+                <span className="w-2 h-2 rounded-full bg-[#2ECC71]" />
+                Disponible
               </span>
-            )}
+            </div>
           </div>
 
           {/* CTA */}

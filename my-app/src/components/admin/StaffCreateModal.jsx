@@ -102,7 +102,7 @@ export default function StaffCreateModal({ open, onClose, onSubmit }) {
               placeholder="ej: jperez"
               value={form.username}
               onChange={handleChange}
-              className={`h-10 ${errors.username ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+              className={`h-10 placeholder:text-[#9CA3AF] ${errors.username ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
             />
             {errors.username && (
               <p className="text-xs text-[#E5533D] mt-1.5">{errors.username}</p>
@@ -119,7 +119,7 @@ export default function StaffCreateModal({ open, onClose, onSubmit }) {
               placeholder="usuario@promelab.com"
               value={form.email}
               onChange={handleChange}
-              className={`h-10 ${errors.email ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+              className={`h-10 placeholder:text-[#9CA3AF] ${errors.email ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
             />
             {errors.email && (
               <p className="text-xs text-[#E5533D] mt-1.5">{errors.email}</p>
@@ -136,7 +136,7 @@ export default function StaffCreateModal({ open, onClose, onSubmit }) {
               placeholder="Mínimo 8 caracteres"
               value={form.password}
               onChange={handleChange}
-              className={`h-10 ${errors.password ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+              className={`h-10 placeholder:text-[#9CA3AF] ${errors.password ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
             />
             {errors.password && (
               <p className="text-xs text-[#E5533D] mt-1.5">{errors.password}</p>
@@ -160,7 +160,7 @@ export default function StaffCreateModal({ open, onClose, onSubmit }) {
                 placeholder="Juan"
                 value={form.first_name}
                 onChange={handleChange}
-                className={`h-10 ${errors.first_name ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+                className={`h-10 placeholder:text-[#9CA3AF] ${errors.first_name ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
               />
               {errors.first_name && (
                 <p className="text-xs text-[#E5533D] mt-1.5">{errors.first_name}</p>
@@ -176,7 +176,7 @@ export default function StaffCreateModal({ open, onClose, onSubmit }) {
                 placeholder="Pérez"
                 value={form.last_name}
                 onChange={handleChange}
-                className={`h-10 ${errors.last_name ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+                className={`h-10 placeholder:text-[#9CA3AF] ${errors.last_name ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
               />
               {errors.last_name && (
                 <p className="text-xs text-[#E5533D] mt-1.5">{errors.last_name}</p>
@@ -193,7 +193,7 @@ export default function StaffCreateModal({ open, onClose, onSubmit }) {
               placeholder="+51 999 999 999"
               value={form.phone}
               onChange={handleChange}
-              className="h-10 border-[#E5E7EB]"
+              className="h-10 placeholder:text-[#9CA3AF] border-[#E5E7EB]"
             />
           </div>
         </div>

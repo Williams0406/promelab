@@ -69,7 +69,7 @@ export default function LoginForm() {
               placeholder="Ingresa tu usuario"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="h-10 border-[#E5E7EB]"
+              className="h-10 placeholder:text-[#9CA3AF] border-[#E5E7EB]"
               disabled={loading}
               required
             />
@@ -84,7 +84,7 @@ export default function LoginForm() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-10 border-[#E5E7EB]"
+              className="h-10 placeholder:text-[#9CA3AF] border-[#E5E7EB]"
               disabled={loading}
               required
             />

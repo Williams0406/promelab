@@ -264,10 +264,6 @@ class OrderViewSet(ModelViewSet):
                 price=item.price_snapshot,
             )
 
-            # (opcional) descontar stock
-            item.product.stock -= item.quantity
-            item.product.save()
-
         # 5️⃣ Vaciar carrito
         cart.cartitem_set.all().delete()
 
@@ -401,7 +397,6 @@ class AdminDashboardView(APIView):
         products_data = {
             "total": Product.objects.count(),
             "active": Product.objects.filter(is_active=True).count(),
-            "out_of_stock": Product.objects.filter(stock=0).count(),
             "featured": Product.objects.filter(is_featured=True).count(),
         }
 
@@ -560,9 +555,6 @@ class CulqiChargeView(APIView):
                 quantity=item.quantity,
                 price=item.price_snapshot
             )
-
-            item.product.stock -= item.quantity
-            item.product.save()
 
         cart.cartitem_set.all().delete()
 

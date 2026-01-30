@@ -130,7 +130,7 @@ export default function RegisterForm({ onSwitch }) {
               placeholder="Nombre de usuario"
               value={form.username}
               onChange={handleChange}
-              className={`h-10 ${errors.username ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+              className={`h-10 placeholder:text-[#9CA3AF] ${errors.username ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
               disabled={loading || success}
             />
             {errors.username && (
@@ -148,7 +148,7 @@ export default function RegisterForm({ onSwitch }) {
               placeholder="correo@ejemplo.com"
               value={form.email}
               onChange={handleChange}
-              className={`h-10 ${errors.email ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+              className={`h-10 placeholder:text-[#9CA3AF] ${errors.email ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
               disabled={loading || success}
             />
             {errors.email && (
@@ -166,7 +166,7 @@ export default function RegisterForm({ onSwitch }) {
               placeholder="Mínimo 8 caracteres"
               value={form.password}
               onChange={handleChange}
-              className={`h-10 ${errors.password ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+              className={`h-10 placeholder:text-[#9CA3AF] ${errors.password ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
               disabled={loading || success}
             />
             {errors.password && (
@@ -184,7 +184,7 @@ export default function RegisterForm({ onSwitch }) {
               placeholder="Repite tu contraseña"
               value={form.password2}
               onChange={handleChange}
-              className={`h-10 ${errors.password2 ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+              className={`h-10 placeholder:text-[#9CA3AF] ${errors.password2 ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
               disabled={loading || success}
             />
             {errors.password2 && (

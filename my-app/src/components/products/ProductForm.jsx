@@ -11,10 +11,8 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
 
   const [form, setForm] = useState({
     name: safeInitialData.name || "",
-    slug: safeInitialData.slug || "",
     description: safeInitialData.description || "",
     price: safeInitialData.price || "",
-    stock: safeInitialData.stock || "",
     category: safeInitialData.category || "",
     vendor: safeInitialData.vendor || "",
     is_active: safeInitialData.is_active ?? true,
@@ -58,10 +56,8 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
     const data = initialData || {};
     setForm({
       name: data.name || "",
-      slug: data.slug || "",
       description: data.description || "",
       price: data.price || "",
-      stock: data.stock || "",
       category: data.category || "",
       vendor: data.vendor || "",
       is_active: data.is_active ?? true,
@@ -83,16 +79,6 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
         [name]: type === "checkbox" ? checked : value 
       };
 
-      // Auto-generar slug
-      if (name === "name") {
-        const slugified = value
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, "-")
-          .replace(/[^\w-]+/g, "");
-        updated.slug = slugified;
-      }
-
       return updated;
     });
   }
@@ -104,20 +90,12 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
       newErrors.name = "El nombre es obligatorio";
     }
 
-    if (!form.slug.trim()) {
-      newErrors.slug = "El slug es obligatorio";
-    }
-
     if (!form.description.trim()) {
       newErrors.description = "La descripción es obligatoria";
     }
 
     if (!form.price || parseFloat(form.price) <= 0) {
       newErrors.price = "El precio debe ser mayor a 0";
-    }
-
-    if (!form.stock || parseInt(form.stock) < 0) {
-      newErrors.stock = "El stock no puede ser negativo";
     }
 
     setErrors(newErrors);
@@ -184,26 +162,10 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
               value={form.name}
               onChange={handleChange}
               placeholder="Ej. Reactivo químico grado analítico"
-              className={`h-10 ${errors.name ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+              className={`h-10 placeholder:text-[#9CA3AF] ${errors.name ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
             />
             {errors.name && (
               <p className="text-xs text-[#E5533D] mt-1.5">{errors.name}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[#374151] mb-2">
-              Slug (URL)
-            </label>
-            <Input
-              name="slug"
-              value={form.slug}
-              onChange={handleChange}
-              placeholder="reactivo-quimico-grado-analitico"
-              className={`h-10 ${errors.slug ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
-            />
-            {errors.slug && (
-              <p className="text-xs text-[#E5533D] mt-1.5">{errors.slug}</p>
             )}
           </div>
         </div>
@@ -275,7 +237,7 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
           </div>
         </div>
 
-        {/* Precio y stock */}
+        {/* Precio*/}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-[#374151] mb-2">
@@ -288,27 +250,10 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
               value={form.price}
               onChange={handleChange}
               placeholder="0.00"
-              className={`h-10 ${errors.price ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+              className={`h-10 placeholder:text-[#9CA3AF] ${errors.price ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
             />
             {errors.price && (
               <p className="text-xs text-[#E5533D] mt-1.5">{errors.price}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[#374151] mb-2">
-              Stock disponible
-            </label>
-            <Input
-              name="stock"
-              type="number"
-              value={form.stock}
-              onChange={handleChange}
-              placeholder="Cantidad en inventario"
-              className={`h-10 ${errors.stock ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
-            />
-            {errors.stock && (
-              <p className="text-xs text-[#E5533D] mt-1.5">{errors.stock}</p>
             )}
           </div>
         </div>

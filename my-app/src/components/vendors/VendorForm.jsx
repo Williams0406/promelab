@@ -109,7 +109,7 @@ export default function VendorForm({
             value={form.name}
             onChange={handleChange}
             placeholder="Ej. Sigma-Aldrich Perú"
-            className={`h-10 ${errors.name ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+            className={`h-10 placeholder:text-[#9CA3AF] ${errors.name ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
           />
           {errors.name && (
             <p className="text-xs text-[#E5533D] mt-1.5">{errors.name}</p>
@@ -127,7 +127,7 @@ export default function VendorForm({
             value={form.contact_email}
             onChange={handleChange}
             placeholder="contacto@proveedor.com"
-            className={`h-10 ${errors.contact_email ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
+            className={`h-10 placeholder:text-[#9CA3AF] ${errors.contact_email ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
           />
           {errors.contact_email && (
             <p className="text-xs text-[#E5533D] mt-1.5">{errors.contact_email}</p>
@@ -144,7 +144,7 @@ export default function VendorForm({
             value={form.phone}
             onChange={handleChange}
             placeholder="+51 999 999 999"
-            className="h-10 border-[#E5E7EB]"
+            className="h-10 placeholder:text-[#9CA3AF] border-[#E5E7EB]"
           />
         </div>
 
