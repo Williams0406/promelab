@@ -5,6 +5,7 @@ import Modal from "@/components/ui/Modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { adminAPI } from "@/lib/api";
+import ProductImagesUploader from "@/components/products/ProductImagesUploader";
 
 export default function ProductForm({ open, onClose, initialData, onSubmit }) {
   const safeInitialData = initialData || {};
@@ -23,6 +24,7 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const isEdit = !!safeInitialData.id;
 
   // Cargar categorías y proveedores
   useEffect(() => {
@@ -189,6 +191,13 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
             <p className="text-xs text-[#E5533D] mt-1.5">{errors.description}</p>
           )}
         </div>
+
+        {/* Imágenes del producto */}
+        {isEdit && (
+          <div className="pt-4 border-t border-[#E5E7EB]">
+            <ProductImagesUploader productId={safeInitialData.id} />
+          </div>
+        )}
 
         {/* Categoría y proveedor */}
         <div className="grid gap-4 sm:grid-cols-2">

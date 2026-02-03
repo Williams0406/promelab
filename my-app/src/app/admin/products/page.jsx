@@ -31,8 +31,16 @@ export default function AdminProductsPage() {
   // 🔬 FEEDBACK
   const [successMessage, setSuccessMessage] = useState(null);
 
+  const [filters, setFilters] = useState({
+    search: "",
+    category: "",
+    vendor: "",
+  });
+  const debouncedFilters = useDebounce(filters, 400);
+  const [ordering, setOrdering] = useState("-created_at");
+
   // 🔬 FETCH PRODUCTOS
-  async function fetchProducts(pageNumber = page) {
+  async function fetchProducts(pageNumber = page, customFilters = filters) {
     setLoading(true);
     setError(null);
 
@@ -40,6 +48,10 @@ export default function AdminProductsPage() {
       const res = await adminAPI.getProducts({
         page: pageNumber,
         page_size: pageSize,
+        search: customFilters.search || undefined,
+        category: customFilters.category || undefined,
+        vendor: customFilters.vendor || undefined,
+        ordering,
       });
 
       setProducts(res.data.results || []);
@@ -54,8 +66,8 @@ export default function AdminProductsPage() {
   }
 
   useEffect(() => {
-    fetchProducts(1);
-  }, []);
+    fetchProducts(1, debouncedFilters);
+  }, [debouncedFilters, ordering]);
 
   // 🔬 HANDLERS CON FEEDBACK
   async function handleCreate(data) {
@@ -63,7 +75,7 @@ export default function AdminProductsPage() {
       await adminAPI.createProduct(data);
       setModal({ type: null, data: null });
       showSuccess("Producto creado correctamente");
-      fetchProducts(1); // Volver a página 1
+      fetchProducts(1);
     } catch (err) {
       console.error("Error creando producto:", err);
       throw err; // El form manejará el error
@@ -106,6 +118,18 @@ export default function AdminProductsPage() {
   function showSuccess(message) {
     setSuccessMessage(message);
     setTimeout(() => setSuccessMessage(null), 3000);
+  }
+  
+
+  function useDebounce(value, delay = 400) {
+    const [debounced, setDebounced] = useState(value);
+
+    useEffect(() => {
+      const timer = setTimeout(() => setDebounced(value), delay);
+      return () => clearTimeout(timer);
+    }, [value, delay]);
+
+    return debounced;
   }
 
   // 🔬 COLUMNAS CON JERARQUÍA
@@ -157,20 +181,6 @@ export default function AdminProductsPage() {
       ),
     },
   ];
-
-  // 🔬 LOADING CLÍNICO
-  if (loading && page === 1) {
-    return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <div className="text-center space-y-3">
-          <Loader2 className="h-7 w-7 animate-spin text-[#002366] mx-auto" />
-          <p className="text-sm text-[#6B7280] font-medium">
-            Cargando productos
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   // 🔬 ERROR STATE
   if (error && products.length === 0) {
@@ -229,9 +239,95 @@ export default function AdminProductsPage() {
         </Button>
       </div>
 
+      {/* 🔬 FILTROS */}
+      <div className="bg-white border border-[#E5E7EB] rounded-lg p-4 flex flex-wrap gap-4 items-end">
+
+        {/* Buscar */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-[#374151]">
+            Buscar
+          </label>
+          <input
+            type="text"
+            value={filters.search}
+            onChange={(e) =>
+              setFilters({ ...filters, search: e.target.value })
+            }
+            placeholder="Nombre del producto"
+            className="border border-[#D1D5DB] rounded-md px-3 py-2 text-sm w-64"
+          />
+        </div>
+
+        {/* Categoría */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-[#374151]">
+            Categoría
+          </label>
+          <input
+            type="text"
+            value={filters.category}
+            onChange={(e) =>
+              setFilters({ ...filters, category: e.target.value })
+            }
+            placeholder="ID o slug"
+            className="border border-[#D1D5DB] rounded-md px-3 py-2 text-sm w-48"
+          />
+        </div>
+
+        {/* Proveedor */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-[#374151]">
+            Proveedor
+          </label>
+          <input
+            type="text"
+            value={filters.vendor}
+            onChange={(e) =>
+              setFilters({ ...filters, vendor: e.target.value })
+            }
+            placeholder="ID o nombre"
+            className="border border-[#D1D5DB] rounded-md px-3 py-2 text-sm w-48"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-[#374151]">
+            Ordenar por
+          </label>
+          <select
+            value={ordering}
+            onChange={(e) => setOrdering(e.target.value)}
+            className="border border-[#D1D5DB] rounded-md px-3 py-2 text-sm w-48"
+          >
+            <option value="-created_at">Más recientes</option>
+            <option value="created_at">Más antiguos</option>
+            <option value="name">Nombre A–Z</option>
+            <option value="-name">Nombre Z–A</option>
+            <option value="price">Precio menor</option>
+            <option value="-price">Precio mayor</option>
+          </select>
+        </div>
+
+        {/* Acciones */}
+        <div className="flex gap-2">
+
+          <Button
+            type="button"   // 🔥 CLAVE
+            variant="outline"
+            onClick={() => {
+              const reset = { search: "", category: "", vendor: "" };
+              setFilters(reset);
+            }}
+            className="text-sm"
+          >
+            Limpiar
+          </Button>
+        </div>
+      </div>
+
       {/* 🔬 TABLA CON LOADING INLINE */}
       <div className="relative">
-        {loading && page > 1 && (
+        {loading && (
           <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
             <Loader2 className="h-6 w-6 animate-spin text-[#002366]" />
           </div>

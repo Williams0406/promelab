@@ -1,6 +1,6 @@
 # app/urls.py
 from django.urls import path, include
-from rest_framework.routers import SimpleRouter
+from rest_framework.routers import DefaultRouter
 from rest_framework_nested import routers
 
 from .views import (
@@ -12,7 +12,7 @@ from .views import (
 )
 
 # Rutas principales
-router = SimpleRouter()
+router = DefaultRouter()
 router.register("categories", CategoryViewSet, basename="categories")
 router.register("admin/categories", CategoryAdminViewSet, basename="admin-categories")
 router.register("admin/vendors", VendorAdminViewSet, basename="admin-vendors")
@@ -28,7 +28,7 @@ router.register("admin/staff", StaffAdminViewSet, basename="admin-staff")
 router.register("vendors", VendorPublicViewSet, basename="vendors")
 
 # Rutas anidadas para ProductImage
-products_router = routers.NestedSimpleRouter(router, "admin/products", lookup="product")
+products_router = routers.NestedDefaultRouter(router,"admin/products",lookup="product")
 products_router.register("images", ProductImageAdminViewSet, basename="admin-product-images")
 
 urlpatterns = [

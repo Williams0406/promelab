@@ -26,18 +26,22 @@ export default function ProductImagesUploader({ productId }) {
     if (productId) fetchImages();
   }, [productId]);
 
-  const handleUpload = async (file) => {
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("image", file);
+  const handleUpload = async (files) => {
+    if (!files || files.length === 0) return;
 
     setUploading(true);
+
     try {
-      await adminAPI.uploadProductImage(productId, formData);
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        await adminAPI.uploadProductImage(productId, formData);
+      }
+
       fetchImages();
     } catch (err) {
-      console.error("Error subiendo imagen:", err);
+      console.error("Error subiendo imágenes:", err);
     } finally {
       setUploading(false);
     }
@@ -96,10 +100,11 @@ export default function ProductImagesUploader({ productId }) {
           ref={fileRef}
           type="file"
           accept="image/*"
+          multiple
           className="hidden"
           onChange={(e) => {
-            handleUpload(e.target.files[0]);
-            e.target.value = null; // Reset
+            handleUpload(e.target.files);
+            e.target.value = null;
           }}
         />
 

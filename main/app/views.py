@@ -133,23 +133,68 @@ class ProductViewSet(ReadOnlyModelViewSet):
 
 
 class ProductAdminViewSet(ModelViewSet):
-    queryset = Product.objects.all()
     serializer_class = ProductAdminSerializer
     permission_classes = [IsStaff]
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        category = self.request.query_params.get("category")
+        qs = Product.objects.select_related(
+            "category", "vendor"
+        )
+
+        params = self.request.query_params
+
+        # 🔍 SEARCH
+        search = params.get("search")
+        if search:
+            qs = qs.filter(
+                Q(name__icontains=search) |
+                Q(description__icontains=search) |
+                Q(vendor__name__icontains=search)
+            )
+
+        # 📂 CATEGORY
+        category = params.get("category")
         if category:
             qs = qs.filter(category_id=category)
+
+        # 🏭 VENDOR
+        vendor = params.get("vendor")
+        if vendor:
+            qs = qs.filter(vendor_id=vendor)
+
+        # ✅ IS ACTIVE
+        is_active = params.get("is_active")
+        if is_active in ["true", "false"]:
+            qs = qs.filter(is_active=is_active == "true")
+
+        # ⭐ IS FEATURED
+        is_featured = params.get("is_featured")
+        if is_featured in ["true", "false"]:
+            qs = qs.filter(is_featured=is_featured == "true")
+
+        # 💰 PRICE RANGE
+        min_price = params.get("min_price")
+        if min_price:
+            qs = qs.filter(price__gte=min_price)
+
+        max_price = params.get("max_price")
+        if max_price:
+            qs = qs.filter(price__lte=max_price)
+        
+        ordering = params.get("ordering")
+        if ordering:
+            qs = qs.order_by(ordering)
+        else:
+            qs = qs.order_by("-created_at")
+
         return qs
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
-    
+
     def get_serializer_context(self):
         return {"request": self.request}
-    
+
     def perform_destroy(self, instance):
         try:
             instance.delete()
