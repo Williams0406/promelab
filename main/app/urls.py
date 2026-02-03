@@ -1,7 +1,8 @@
 # app/urls.py
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
 from rest_framework_nested import routers
+from django.conf import settings
+from django.conf.urls.static import static
 
 from .views import (
     CategoryViewSet, CategoryAdminViewSet,
@@ -11,8 +12,8 @@ from .views import (
     StaffAdminViewSet, AdminDashboardView, CulqiChargeView, VendorPublicViewSet
 )
 
-# Rutas principales
-router = DefaultRouter()
+# 🔑 Router principal (DEBE ser DefaultRouter)
+router = routers.DefaultRouter()
 router.register("categories", CategoryViewSet, basename="categories")
 router.register("admin/categories", CategoryAdminViewSet, basename="admin-categories")
 router.register("admin/vendors", VendorAdminViewSet, basename="admin-vendors")
@@ -27,9 +28,17 @@ router.register("cart-items", CartItemViewSet, basename="cart-items")
 router.register("admin/staff", StaffAdminViewSet, basename="admin-staff")
 router.register("vendors", VendorPublicViewSet, basename="vendors")
 
-# Rutas anidadas para ProductImage
-products_router = routers.NestedDefaultRouter(router,"admin/products",lookup="product")
-products_router.register("images", ProductImageAdminViewSet, basename="admin-product-images")
+# Rutas anidadas para imágenes de productos
+products_router = routers.NestedSimpleRouter(
+    router,
+    r"admin/products",
+    lookup="product"
+)
+products_router.register(
+    r"images",
+    ProductImageAdminViewSet,
+    basename="admin-product-images"
+)
 
 urlpatterns = [
     path("", include(router.urls)),
@@ -38,3 +47,9 @@ urlpatterns = [
     path("admin/dashboard/", AdminDashboardView.as_view(), name="admin-dashboard"),
     path("payments/culqi/charge/", CulqiChargeView.as_view()),
 ]
+
+# Media en desarrollo
+urlpatterns += static(
+    settings.MEDIA_URL,
+    document_root=settings.MEDIA_ROOT
+)
