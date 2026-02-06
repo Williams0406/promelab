@@ -128,9 +128,10 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
           const isHtml =
             backendErrors.toLowerCase().includes("<!doctype") ||
             backendErrors.toLowerCase().includes("<html");
+          const statusCode = err?.response?.status;
           setErrors({
             submit: isHtml
-              ? "Error del servidor al guardar el producto. Revisa los logs del backend."
+              ? `Error del servidor${statusCode ? ` (${statusCode})` : ""} al guardar el producto. Revisa los logs del backend.`
               : backendErrors,
           });
         } else if (backendErrors.detail) {
