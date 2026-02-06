@@ -346,6 +346,7 @@ class StaffCreateSerializer(serializers.ModelSerializer):
             password=password,
             role=User.Role.STAFF,  # 🔒 FORZADO
             is_active=True,
+            is_staff=True,
         )
 
         return user

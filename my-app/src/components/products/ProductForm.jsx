@@ -124,27 +124,11 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
       const backendErrors = err?.response?.data;
 
       if (backendErrors) {
-        if (typeof backendErrors === "string") {
-          const isHtml =
-            backendErrors.toLowerCase().includes("<!doctype") ||
-            backendErrors.toLowerCase().includes("<html");
-          const statusCode = err?.response?.status;
-          setErrors({
-            submit: isHtml
-              ? `Error del servidor${statusCode ? ` (${statusCode})` : ""} al guardar el producto. Revisa los logs del backend.`
-              : backendErrors,
-          });
-        } else if (backendErrors.detail) {
-          setErrors({ submit: backendErrors.detail });
-        } else if (Array.isArray(backendErrors)) {
-          setErrors({ submit: backendErrors.join(" • ") });
-        } else {
-          setErrors({
-            submit: Object.entries(backendErrors)
-              .map(([field, messages]) => `${field}: ${messages[0]}`)
-              .join(" • "),
-          });
-        }
+        setErrors({
+          submit: Object.entries(backendErrors)
+            .map(([field, messages]) => `${field}: ${messages[0]}`)
+            .join(" • ")
+        });
       } else {
         setErrors({ submit: "No se pudo guardar el producto." });
       }
