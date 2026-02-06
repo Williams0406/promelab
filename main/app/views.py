@@ -190,7 +190,15 @@ class ProductAdminViewSet(ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        user = self.request.user
+
+        if not user.is_authenticated:
+            raise ValidationError("Usuario no autenticado")
+
+        if user.role not in ["ADMIN", "STAFF"]:
+            raise ValidationError("No tienes permisos para crear productos")
+
+        serializer.save(created_by=user)
 
     def get_serializer_context(self):
         return {"request": self.request}

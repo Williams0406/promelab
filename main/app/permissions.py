@@ -23,6 +23,7 @@ class IsStaff(BasePermission):
         return (
             request.user.is_authenticated
             and request.user.role in ["ADMIN", "STAFF"]
+            and request.user.is_active
         )
 
 
