@@ -24,7 +24,9 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(true);
-  const isEdit = !!safeInitialData.id;
+  const [createdProductId, setCreatedProductId] = useState(null);
+  const isEdit = !!safeInitialData.id || !!createdProductId;
+  const uploaderProductId = safeInitialData.id || createdProductId;
 
   // Cargar categorías y proveedores
   useEffect(() => {
@@ -65,7 +67,14 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
       is_active: data.is_active ?? true,
     });
     setErrors({});
+    setCreatedProductId(null);
   }, [initialData]);
+
+  useEffect(() => {
+    if (!open) {
+      setCreatedProductId(null);
+    }
+  }, [open]);
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
@@ -118,8 +127,13 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
         vendor: form.vendor || null,
       };
 
-      await onSubmit(submitData);
-      onClose();
+      const created = await onSubmit(submitData);
+      if (created?.id) {
+        setCreatedProductId(created.id);
+      }
+      if (isEdit) {
+        onClose();
+      }
     } catch (err) {
       const backendErrors = err?.response?.data;
 
@@ -141,7 +155,7 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
     <Modal
       open={open}
       onClose={onClose}
-      title={safeInitialData.id ? "Editar producto" : "Nuevo producto"}
+      title={isEdit ? "Editar producto" : "Nuevo producto"}
       size="lg"
     >
       <div className="space-y-6">
@@ -193,9 +207,9 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
         </div>
 
         {/* Imágenes del producto */}
-        {isEdit && (
+        {uploaderProductId && (
           <div className="pt-4 border-t border-[#E5E7EB]">
-            <ProductImagesUploader productId={safeInitialData.id} />
+            <ProductImagesUploader productId={uploaderProductId} />
           </div>
         )}
 

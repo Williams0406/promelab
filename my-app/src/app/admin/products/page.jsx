@@ -72,10 +72,10 @@ export default function AdminProductsPage() {
   // 🔬 HANDLERS CON FEEDBACK
   async function handleCreate(data) {
     try {
-      await adminAPI.createProduct(data);
-      setModal({ type: null, data: null });
+      const res = await adminAPI.createProduct(data);
       showSuccess("Producto creado correctamente");
       fetchProducts(1);
+      return res.data;
     } catch (err) {
       console.error("Error creando producto:", err);
       throw err; // El form manejará el error

@@ -27,16 +27,29 @@ export default function ProductImagesUploader({ productId }) {
   }, [productId]);
 
   const handleUpload = async (files) => {
-    if (!files || files.length === 0) return;
+    const filesToUpload = Array.isArray(files)
+      ? files
+      : Array.from(files || []);
+    if (filesToUpload.length === 0) return;
 
     setUploading(true);
 
     try {
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append("image", file);
-
-        await adminAPI.uploadProductImage(productId, formData);
+      const uploadResults = await Promise.allSettled(
+        filesToUpload.map((file) => {
+          const formData = new FormData();
+          formData.append("image", file);
+          return adminAPI.uploadProductImage(productId, formData);
+        })
+      );
+      const failedUploads = uploadResults.filter(
+        (result) => result.status === "rejected"
+      );
+      if (failedUploads.length > 0) {
+        console.error(
+          "Error subiendo algunas imágenes:",
+          failedUploads.map((result) => result.reason)
+        );
       }
 
       fetchImages();
@@ -103,8 +116,9 @@ export default function ProductImagesUploader({ productId }) {
           multiple
           className="hidden"
           onChange={(e) => {
-            handleUpload(e.target.files);
+            const filesToUpload = Array.from(e.target.files || []);
             e.target.value = null;
+            handleUpload(filesToUpload);
           }}
         />
 
