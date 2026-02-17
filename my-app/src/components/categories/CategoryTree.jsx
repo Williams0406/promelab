@@ -6,6 +6,7 @@ import CategoryNode from "./CategoryNode";
 import CategoryForm from "./CategoryForm";
 import { Button } from "@/components/ui/button";
 import { Plus, FolderTree } from "lucide-react";
+import AssignSubcategoryModal from "./AssignSubcategoryModal";
 
 export default function CategoryTree() {
   const [tree, setTree] = useState([]);
@@ -14,6 +15,7 @@ export default function CategoryTree() {
   const [showForm, setShowForm] = useState(false);
   const [parentCategory, setParentCategory] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
 
   const loadTree = useCallback(async () => {
     try {
@@ -137,6 +139,10 @@ export default function CategoryTree() {
                   setEditingCategory(null);
                   setShowForm(true);
                 }}
+                onAssignExisting={(cat) => {
+                  setParentCategory(cat);
+                  setShowAssignModal(true);
+                }}
                 level={0}
               />
             ))}
@@ -157,6 +163,21 @@ export default function CategoryTree() {
           onSaved={() => {
             setShowForm(false);
             setEditingCategory(null);
+            setParentCategory(null);
+            loadTree();
+          }}
+        />
+      )}
+
+      {showAssignModal && (
+        <AssignSubcategoryModal
+          parentCategory={parentCategory}
+          onClose={() => {
+            setShowAssignModal(false);
+            setParentCategory(null);
+          }}
+          onSaved={() => {
+            setShowAssignModal(false);
             setParentCategory(null);
             loadTree();
           }}

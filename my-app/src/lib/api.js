@@ -17,6 +17,7 @@ const API_BASE_URL =
  */
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true, // 🔥 ESTO SOLUCIONA TODO
 });
 
 /**
@@ -216,6 +217,10 @@ export const adminAPI = {
       formData,
       { headers: { "Content-Type": "multipart/form-data" } }
     ),
+  importData: (formData) =>
+    api.post("/admin/import/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 
   // --------------------------
   // Orders
@@ -248,6 +253,14 @@ export const adminAPI = {
     api.delete(`/content/${id}/`),
 
   // --------------------------
+  // Carts
+  // --------------------------
+  getCarts: (params) => api.get("/admin/carts/", { params }),
+  deleteCart: (id) => api.delete(`/admin/carts/${id}/`),
+  convertCartToOrder: (id) =>
+    api.post(`/admin/carts/${id}/convert_to_order/`),
+
+  // --------------------------
   // STAFF (SOLO ADMIN)
   // --------------------------
   getStaff: () => api.get("/admin/staff/"),
@@ -260,6 +273,6 @@ export const adminAPI = {
 
   deleteStaff: (id) =>
     api.delete(`/admin/staff/${id}/`),
-  };
+  }
 
 export default api;

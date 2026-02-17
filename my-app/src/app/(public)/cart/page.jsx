@@ -16,12 +16,7 @@ export default function CartPage() {
   const { user, loading, isClient } = useAuth();
   const router = useRouter();
 
-  // 🔐 Guard de acceso por rol
-  if (!loading && !user) {
-    router.replace("/login");
-    return null;
-  }
-
+  // Solo bloquear si es admin o staff
   if (!loading && user && !isClient) {
     router.replace("/");
     return null;

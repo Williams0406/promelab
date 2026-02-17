@@ -42,12 +42,12 @@ export default function PaymentMethodsModal({ open, onClose, items, total }) {
   ========================= */
   const handleCulqi = async () => {
     try {
-      setLoading(true);
-
       if (!window.Culqi) {
-        alert("El sistema de pagos no está disponible.");
+        alert("Sistema de pago no disponible.");
         return;
       }
+
+      setLoading(true);
 
       window.Culqi.publicKey =
         process.env.NEXT_PUBLIC_CULQI_PUBLIC_KEY;
@@ -68,15 +68,10 @@ export default function PaymentMethodsModal({ open, onClose, items, total }) {
           agente: false,
           billetera: false,
         },
-        style: {
-          logo: "/logo-promelab.svg",
-          bannerColor: "#002366",
-          buttonBackground: "#002366",
-          buttonText: "white",
-        },
       });
 
-      window.culqi = async () => {
+      // ✅ ESTA ES LA FORMA CORRECTA
+      window.culqi = async function () {
         if (window.Culqi.token) {
           try {
             await clientAPI.createCulqiCharge(
@@ -86,19 +81,20 @@ export default function PaymentMethodsModal({ open, onClose, items, total }) {
             window.location.href = "/orders";
           } catch (err) {
             console.error(err);
-            alert("No se pudo confirmar el pago.");
+            alert("Error confirmando el pago.");
           }
         } else {
           alert(
             window.Culqi.error?.user_message ||
-              "Error procesando la tarjeta"
+            "Tarjeta rechazada"
           );
         }
       };
 
       window.Culqi.open();
-    } catch (error) {
-      console.error(error);
+
+    } catch (err) {
+      console.error(err);
       alert("Error iniciando el pago.");
     } finally {
       setLoading(false);

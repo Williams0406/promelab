@@ -350,3 +350,52 @@ class StaffCreateSerializer(serializers.ModelSerializer):
         )
 
         return user
+
+# ======================
+# CART (ADMIN)
+# ======================
+class CartAdminSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    items = CartItemSerializer(
+        many=True,
+        source="cartitem_set",
+        read_only=True
+    )
+
+    total = serializers.SerializerMethodField()
+    total_items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Cart
+        fields = [
+            "id",
+            "user",
+            "session_key",
+            "items",
+            "total",
+            "total_items",
+            "created_at",
+        ]
+
+    def get_total(self, obj):
+        return sum(
+            item.price_snapshot * item.quantity
+            for item in obj.cartitem_set.all()
+        )
+
+    def get_total_items(self, obj):
+        return sum(
+            item.quantity
+            for item in obj.cartitem_set.all()
+        )
+
+class CategoryPublicTreeSerializer(serializers.ModelSerializer):
+    children = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = ["id", "name", "slug", "children"]
+
+    def get_children(self, obj):
+        children = obj.children.filter(is_active=True)
+        return CategoryPublicTreeSerializer(children, many=True).data

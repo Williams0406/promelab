@@ -35,7 +35,8 @@ from .serializers import (
     VendorSerializer, ProductSerializer, ProductAdminSerializer, ProductImageSerializer,
     CartSerializer, OrderSerializer, OrderAdminSerializer, BannerSerializer,
     ContentBlockSerializer, ClientRegisterSerializer, AddToCartSerializer, CartItemSerializer,
-    StaffCreateSerializer, ProductImageCreateSerializer, BannerCreateUpdateSerializer
+    StaffCreateSerializer, ProductImageCreateSerializer, BannerCreateUpdateSerializer,
+    CartAdminSerializer, CategoryPublicTreeSerializer
 )
 from .permissions import IsAdmin, IsStaff, IsStaffOrReadOnly, IsClient
 
@@ -46,8 +47,8 @@ User = get_user_model()
 # CATEGORY
 # ======================
 class CategoryViewSet(ReadOnlyModelViewSet):
-    queryset = Category.objects.filter(is_active=True)
-    serializer_class = CategorySerializer
+    queryset = Category.objects.filter(is_active=True, parent__isnull=True)
+    serializer_class = CategoryPublicTreeSerializer
     permission_classes = [AllowAny]
 
 class CategoryAdminViewSet(ModelViewSet):
@@ -240,17 +241,32 @@ class ProductImageAdminViewSet(ModelViewSet):
 # ======================
 class CartViewSet(ModelViewSet):
     serializer_class = CartSerializer
-    permission_classes = [IsClient]
+    permission_classes = [AllowAny]
     pagination_class = None
 
+    def get_cart(self, request):
+        if request.user.is_authenticated:
+            cart, _ = Cart.objects.get_or_create(user=request.user)
+            return cart
+
+        # 🔥 USUARIO INVITADO
+        if not request.session.session_key:
+            request.session.create()
+
+        cart, _ = Cart.objects.get_or_create(
+            session_key=request.session.session_key,
+            user=None
+        )
+        return cart
+
     def list(self, request):
-        cart, _ = Cart.objects.get_or_create(user=request.user)
+        cart = self.get_cart(request)
         return Response(
             CartSerializer(cart, context={"request": request}).data
         )
 
     def get_queryset(self):
-        return Cart.objects.filter(user=self.request.user)
+        return Cart.objects.none()
 
     def create(self, request, *args, **kwargs):
         serializer = AddToCartSerializer(data=request.data)
@@ -261,7 +277,7 @@ class CartViewSet(ModelViewSet):
 
         product = Product.objects.get(id=product_id)
 
-        cart, _ = Cart.objects.get_or_create(user=request.user)
+        cart = self.get_cart(request)
 
         item, created = CartItem.objects.get_or_create(
             cart=cart,
@@ -367,7 +383,40 @@ class ContentBlockViewSet(ReadOnlyModelViewSet):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
-        data['user'] = UserSerializer(self.user).data
+
+        request = self.context.get("request")
+
+        if request:
+            # 🔥 Asegurar que exista sesión
+            if not request.session.session_key:
+                request.session.create()
+
+            session_key = request.session.session_key
+
+            session_cart = Cart.objects.filter(
+                session_key=session_key,
+                user__isnull=True
+            ).first()
+
+            if session_cart:
+                user_cart, _ = Cart.objects.get_or_create(user=self.user)
+
+                for item in session_cart.cartitem_set.all():
+                    existing = CartItem.objects.filter(
+                        cart=user_cart,
+                        product=item.product
+                    ).first()
+
+                    if existing:
+                        existing.quantity += item.quantity
+                        existing.save()
+                    else:
+                        item.cart = user_cart
+                        item.save()
+
+                session_cart.delete()
+
+        data["user"] = UserSerializer(self.user).data
         return data
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -392,10 +441,19 @@ class ClientRegisterView(CreateAPIView):
 
 class CartItemViewSet(ModelViewSet):
     serializer_class = CartItemSerializer
-    permission_classes = [IsClient]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return CartItem.objects.filter(cart__user=self.request.user)
+        if self.request.user.is_authenticated:
+            return CartItem.objects.filter(cart__user=self.request.user)
+
+        if not self.request.session.session_key:
+            self.request.session.create()
+
+        return CartItem.objects.filter(
+            cart__session_key=self.request.session.session_key,
+            cart__user__isnull=True
+        )
 
     def partial_update(self, request, *args, **kwargs):
         item = self.get_object()
@@ -623,3 +681,84 @@ class VendorPublicViewSet(ReadOnlyModelViewSet):
     queryset = Vendor.objects.filter(is_active=True)
     serializer_class = VendorSerializer
     permission_classes = [AllowAny]
+
+# ======================
+# CART ADMIN
+# ======================
+class CartAdminViewSet(ModelViewSet):
+    serializer_class = CartAdminSerializer
+    permission_classes = [IsStaff]
+    http_method_names = ["get", "delete", "post", "head", "options"]
+
+    def get_queryset(self):
+        qs = (
+            Cart.objects
+            .select_related("user")
+            .prefetch_related("cartitem_set__product")
+            .order_by("-created_at")
+        )
+
+        params = self.request.query_params
+
+        # 🔍 Filtro por usuario
+        user_id = params.get("user")
+        if user_id:
+            qs = qs.filter(user_id=user_id)
+
+        # 🔎 Solo carritos activos (con items)
+        active = params.get("active")
+        if active == "true":
+            qs = qs.filter(cartitem__isnull=False).distinct()
+
+        # 🔎 Solo invitados
+        guest = params.get("guest")
+        if guest == "true":
+            qs = qs.filter(user__isnull=True)
+
+        return qs
+    
+    @action(detail=True, methods=["post"])
+    def convert_to_order(self, request, pk=None):
+        cart = self.get_object()
+
+        if not cart.cartitem_set.exists():
+            return Response(
+                {"error": "El carrito está vacío"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not cart.user:
+            return Response(
+                {"error": "No se puede convertir un carrito de invitado en orden"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        total = sum(
+            item.price_snapshot * item.quantity
+            for item in cart.cartitem_set.all()
+        )
+
+        order = Order.objects.create(
+            user=cart.user,
+            status=Order.Status.CREATED,
+            total=total
+        )
+
+        for item in cart.cartitem_set.all():
+            OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                quantity=item.quantity,
+                price=item.price_snapshot
+            )
+
+        cart.cartitem_set.all().delete()
+
+        return Response(
+            {"message": "Orden creada correctamente"},
+            status=status.HTTP_201_CREATED
+        )
+
+    def perform_destroy(self, instance):
+        instance.cartitem_set.all().delete()
+        instance.delete()

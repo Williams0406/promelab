@@ -6,7 +6,12 @@ import { Plus, Edit, Trash2 } from "lucide-react";
 import CategoryForm from "./CategoryForm";
 import CategoryDeleteDialog from "./CategoryDeleteDialog";
 
-export default function CategoryActions({ category, onRefresh, onAddChild }) {
+export default function CategoryActions({ 
+  category, 
+  onRefresh, 
+  onAddChild,
+  onAssignExisting,
+}) {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -21,6 +26,15 @@ export default function CategoryActions({ category, onRefresh, onAddChild }) {
         >
           <Plus className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Subcategoría</span>
+        </button>
+
+        <button
+          onClick={() => onAssignExisting(category)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-[#002366] hover:bg-[#F5F7FA] transition-colors duration-150"
+          title="Asignar subcategoría existente"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Asignar</span>
         </button>
 
         {/* Editar */}

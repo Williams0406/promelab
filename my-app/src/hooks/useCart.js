@@ -17,12 +17,6 @@ export function CartProvider({ children }) {
      LOAD CART FROM BACKEND
   ========================= */
   const loadCart = async () => {
-    if (!isAuthenticated) {
-      setItems([]);
-      setInitialized(true);
-      return;
-    }
-
     try {
       const res = await clientAPI.getCart();
       const cart = Array.isArray(res.data) ? res.data[0] : res.data;
@@ -45,8 +39,6 @@ export function CartProvider({ children }) {
      CART ACTIONS
   ========================= */
   const addItem = async (product, quantity = 1) => {
-    if (!isAuthenticated) return;
-
     setLoading(true);
     try {
       await clientAPI.addToCart(product.id, quantity);

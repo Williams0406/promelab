@@ -3,13 +3,15 @@ from django.urls import path, include
 from rest_framework_nested import routers
 from django.conf import settings
 from django.conf.urls.static import static
+from .import_view import AdminImportView
 
 from .views import (
     CategoryViewSet, CategoryAdminViewSet,
     VendorAdminViewSet, ProductViewSet, ProductAdminViewSet,
     ProductImageAdminViewSet, CartViewSet, OrderViewSet, OrderAdminViewSet,
     BannerViewSet, ContentBlockViewSet, ClientRegisterView, CartItemViewSet,
-    StaffAdminViewSet, AdminDashboardView, CulqiChargeView, VendorPublicViewSet
+    StaffAdminViewSet, AdminDashboardView, CulqiChargeView, VendorPublicViewSet,
+    CartAdminViewSet
 )
 
 # 🔑 Router principal (DEBE ser DefaultRouter)
@@ -27,6 +29,7 @@ router.register("content", ContentBlockViewSet, basename="content")
 router.register("cart-items", CartItemViewSet, basename="cart-items")
 router.register("admin/staff", StaffAdminViewSet, basename="admin-staff")
 router.register("vendors", VendorPublicViewSet, basename="vendors")
+router.register("admin/carts", CartAdminViewSet, basename="admin-carts")
 
 # Rutas anidadas para imágenes de productos
 products_router = routers.NestedSimpleRouter(
@@ -46,6 +49,7 @@ urlpatterns = [
     path("auth/register/", ClientRegisterView.as_view(), name="register"),
     path("admin/dashboard/", AdminDashboardView.as_view(), name="admin-dashboard"),
     path("payments/culqi/charge/", CulqiChargeView.as_view()),
+    path("admin/import/", AdminImportView.as_view()),
 ]
 
 # Media en desarrollo

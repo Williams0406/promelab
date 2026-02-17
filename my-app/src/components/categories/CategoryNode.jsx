@@ -11,6 +11,7 @@ export default function CategoryNode({
   onRefresh,
   onEdit,
   onAddChild,
+  onAssignExisting, // 👈 NUEVO
   onDelete,
   level = 0,
 }) {
@@ -99,6 +100,7 @@ export default function CategoryNode({
             category={category}
             onRefresh={onRefresh}
             onAddChild={onAddChild}
+            onAssignExisting={onAssignExisting}
           />
         </div>
       </div>
@@ -130,6 +132,7 @@ export default function CategoryNode({
                   onRefresh={onRefresh}
                   onEdit={onEdit}
                   onAddChild={onAddChild}
+                  onAssignExisting={onAssignExisting} // 👈 NUEVO
                   onDelete={onDelete}
                   level={level + 1}
                 />

@@ -10,6 +10,7 @@ import ProductDetailModal from "@/components/products/ProductDetailModal";
 import ProductDeleteDialog from "@/components/products/ProductDeleteDialog";
 import Pagination from "@/components/common/Pagination";
 import { Loader2, AlertCircle, Plus, Package } from "lucide-react";
+import ProductImportModal from "@/components/products/ProductImportModal";
 
 export default function AdminProductsPage() {
   // 🔬 ESTADO ORGANIZADO
@@ -230,13 +231,25 @@ export default function AdminProductsPage() {
           </p>
         </div>
 
-        <Button
-          onClick={() => setModal({ type: "create", data: null })}
-          className="bg-[#002366] hover:bg-[#001a4d] text-white font-medium text-sm px-4 py-2 rounded-lg transition-colors duration-150"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Producto
-        </Button>
+        <div className="flex gap-3">
+
+          <Button
+            variant="outline"
+            onClick={() => setModal({ type: "import", data: null })}
+            className="text-sm"
+          >
+            Importar
+          </Button>
+
+          <Button
+            onClick={() => setModal({ type: "create", data: null })}
+            className="bg-[#002366] hover:bg-[#001a4d] text-white font-medium text-sm px-4 py-2 rounded-lg transition-colors duration-150"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Producto
+          </Button>
+
+        </div>
       </div>
 
       {/* 🔬 FILTROS */}
@@ -394,6 +407,17 @@ export default function AdminProductsPage() {
           product={modal.data}
           onClose={() => setModal({ type: null, data: null })}
           onDeleted={handleDelete}
+        />
+      )}
+
+      {modal.type === "import" && (
+        <ProductImportModal
+          open={true}
+          onClose={() => setModal({ type: null, data: null })}
+          onSuccess={() => {
+            showSuccess("Importación completada correctamente");
+            fetchProducts(1);
+          }}
         />
       )}
     </div>

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Search, ShoppingCart, User, Menu, LayoutDashboard, X, Instagram, Facebook } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import LogoutButton from "@/components/auth/LogoutButton";
 import { publicAPI } from "@/lib/api";
@@ -322,23 +321,75 @@ export default function Header() {
 
       {/* CATEGORÍAS — Navegación secundaria */}
       <div className="hidden md:block border-t border-[#E5E7EB] bg-[#F5F7FA]">
-        <div className="container mx-auto px-4">
-          <nav className="flex h-11 items-center gap-8 overflow-x-auto text-sm">
+        <div className="container mx-auto px-4 relative">
+          <nav className="flex h-11 items-center gap-8 text-sm">
+            
             <Link
               href="/products"
-              className="whitespace-nowrap font-medium text-[#002366] hover:text-[#00A8CC] transition-colors duration-150"
+              className="whitespace-nowrap font-medium text-[#002366] hover:text-[#00A8CC] transition-colors"
             >
               Todos los productos
             </Link>
-            {categories.slice(0, 6).map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/products?category=${cat.id}`}
-                className="whitespace-nowrap text-[#6B7280] hover:text-[#002366] transition-colors duration-150"
-              >
-                {cat.name}
-              </Link>
+
+            {categories.map((cat) => (
+              <div key={cat.id} className="relative group">
+                
+                {/* CATEGORIA PRINCIPAL */}
+                <Link
+                  href={`/products?category=${cat.id}`}
+                  className="whitespace-nowrap text-[#6B7280] hover:text-[#002366] transition-colors font-medium"
+                >
+                  {cat.name}
+                </Link>
+
+                {/* MEGA DROPDOWN */}
+                {cat.children?.length > 0 && (
+                  <div className="absolute left-0 top-full mt-3 w-72 bg-white border border-[#E5E7EB] rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-2 group-hover:translate-y-0 z-50">
+                    
+                    <div className="p-4">
+                      {cat.children.map((child) => (
+                        <div key={child.id} className="relative group/sub">
+
+                          {/* SUBCATEGORIA */}
+                          <Link
+                            href={`/products?category=${child.id}`}
+                            className="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-[#374151] hover:bg-[#F5F7FA] hover:text-[#002366] transition-colors"
+                          >
+                            {child.name}
+
+                            {child.children?.length > 0 && (
+                              <span className="text-xs text-[#9CA3AF] ml-2">›</span>
+                            )}
+                          </Link>
+
+                          {/* SUB-SUBCATEGORIAS (panel lateral) */}
+                          {child.children?.length > 0 && (
+                            <div className="absolute left-full top-0 ml-2 w-72 bg-white border border-[#E5E7EB] rounded-xl shadow-xl opacity-0 invisible group-hover/sub:opacity-100 group-hover/sub:visible transition-all duration-200 translate-x-2 group-hover/sub:translate-x-0 z-50">
+                              
+                              <div className="p-4 space-y-1">
+                                {child.children.map((subchild) => (
+                                  <Link
+                                    key={subchild.id}
+                                    href={`/products?category=${subchild.id}`}
+                                    className="block px-3 py-2 rounded-lg text-sm text-[#374151] hover:bg-[#F5F7FA] hover:text-[#002366] transition-colors"
+                                  >
+                                    {subchild.name}
+                                  </Link>
+                                ))}
+                              </div>
+
+                            </div>
+                          )}
+
+                        </div>
+                      ))}
+                    </div>
+
+                  </div>
+                )}
+              </div>
             ))}
+
           </nav>
         </div>
       </div>

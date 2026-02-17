@@ -25,17 +25,10 @@ export default function AddToCartButton({ product, size = "default" }) {
     success;
 
   const handleAdd = async () => {
-    // Si no está autenticado, redirigir a login
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
-    }
-
     try {
       setLoading(true);
       await addItem(product);
-      
-      // Feedback de éxito
+
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
     } finally {
