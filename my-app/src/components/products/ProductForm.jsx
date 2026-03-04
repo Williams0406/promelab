@@ -1,11 +1,102 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Modal from "@/components/ui/Modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { adminAPI } from "@/lib/api";
 import ProductImagesUploader from "@/components/products/ProductImagesUploader";
+import { Search, ChevronDown, ChevronRight, Building2 } from "lucide-react";
+
+function filterCategoryTree(nodes, query) {
+  if (!query.trim()) return nodes;
+
+  const normalizedQuery = query.toLowerCase();
+
+  return nodes
+    .map((node) => {
+      const filteredChildren = filterCategoryTree(node.children || [], query);
+      const matchesNode = node.name.toLowerCase().includes(normalizedQuery);
+
+      if (matchesNode || filteredChildren.length > 0) {
+        return {
+          ...node,
+          children: filteredChildren,
+        };
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+}
+
+function CategoryTreeOption({
+  node,
+  level,
+  selectedCategory,
+  onSelect,
+  expandedIds,
+  onToggle,
+  forceExpanded,
+}) {
+  const hasChildren = node.children && node.children.length > 0;
+  const isExpanded = forceExpanded || expandedIds.has(node.id);
+  const isSelected = String(selectedCategory) === String(node.id);
+
+  return (
+    <div>
+      <div
+        className={`group flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors ${
+          isSelected ? "bg-[#E0F2FE] text-[#002366]" : "hover:bg-[#EEF2FF] text-[#374151]"
+        }`}
+        style={{ paddingLeft: `${0.5 + level * 1}rem` }}
+      >
+        {hasChildren ? (
+          <button
+            type="button"
+            onClick={() => onToggle(node.id)}
+            className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-[#E5E7EB]"
+            aria-label={isExpanded ? "Contraer" : "Expandir"}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-3.5 w-3.5 text-[#6B7280]" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 text-[#6B7280]" />
+            )}
+          </button>
+        ) : (
+          <span className="h-5 w-5" />
+        )}
+
+        <button
+          type="button"
+          onClick={() => onSelect(node)}
+          className="flex-1 text-left truncate"
+          title={node.name}
+        >
+          {node.name}
+        </button>
+      </div>
+
+      {hasChildren && isExpanded && (
+        <div className="mt-0.5 space-y-0.5">
+          {node.children.map((child) => (
+            <CategoryTreeOption
+              key={child.id}
+              node={child}
+              level={level + 1}
+              selectedCategory={selectedCategory}
+              onSelect={onSelect}
+              expandedIds={expandedIds}
+              onToggle={onToggle}
+              forceExpanded={forceExpanded}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProductForm({ open, onClose, initialData, onSubmit }) {
   const safeInitialData = initialData || {};
@@ -19,8 +110,11 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
     is_active: safeInitialData.is_active ?? true,
   });
 
-  const [categories, setCategories] = useState([]);
+  const [categoryTree, setCategoryTree] = useState([]);
   const [vendors, setVendors] = useState([]);
+  const [categorySearch, setCategorySearch] = useState("");
+  const [vendorSearch, setVendorSearch] = useState("");
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState(new Set());
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -32,20 +126,20 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
   useEffect(() => {
     async function fetchOptions() {
       if (!open) return;
-      
+
       setLoadingOptions(true);
       try {
         const [catRes, vendorRes] = await Promise.all([
-          adminAPI.getCategories(),
+          adminAPI.getCategoryTree(),
           adminAPI.getVendors(),
         ]);
 
-        setCategories(catRes.data?.results || []);
+        setCategoryTree(Array.isArray(catRes.data) ? catRes.data : []);
         setVendors(vendorRes.data?.results || []);
       } catch (err) {
         console.error("Error cargando opciones:", err);
-        setErrors({ 
-          submit: "No se pudieron cargar categorías o proveedores." 
+        setErrors({
+          submit: "No se pudieron cargar categorías o proveedores.",
         });
       } finally {
         setLoadingOptions(false);
@@ -68,26 +162,45 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
     });
     setErrors({});
     setCreatedProductId(null);
+    setCategorySearch("");
+    setVendorSearch("");
+    setExpandedCategoryIds(new Set());
   }, [initialData]);
 
   useEffect(() => {
     if (!open) {
       setCreatedProductId(null);
+      setCategorySearch("");
+      setVendorSearch("");
+      setExpandedCategoryIds(new Set());
     }
   }, [open]);
+
+  const visibleCategoryTree = useMemo(
+    () => filterCategoryTree(categoryTree, categorySearch),
+    [categoryTree, categorySearch]
+  );
+
+  const visibleVendors = useMemo(() => {
+    if (!vendorSearch.trim()) return vendors;
+    const query = vendorSearch.toLowerCase();
+    return vendors.filter((vendor) => vendor.name.toLowerCase().includes(query));
+  }, [vendors, vendorSearch]);
+
+  const forceExpandCategories = !!categorySearch.trim();
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
 
     // Limpiar error del campo
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
+      setErrors((prev) => ({ ...prev, [name]: null }));
     }
 
     setForm((prev) => {
-      const updated = { 
-        ...prev, 
-        [name]: type === "checkbox" ? checked : value 
+      const updated = {
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
       };
 
       return updated;
@@ -141,7 +254,7 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
         setErrors({
           submit: Object.entries(backendErrors)
             .map(([field, messages]) => `${field}: ${messages[0]}`)
-            .join(" • ")
+            .join(" • "),
         });
       } else {
         setErrors({ submit: "No se pudo guardar el producto." });
@@ -159,7 +272,6 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
       size="lg"
     >
       <div className="space-y-6">
-        
         {/* Error general */}
         {errors.submit && (
           <div className="rounded-lg bg-[#FEF2F2] border border-[#E5533D] p-4">
@@ -219,44 +331,124 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
             <label className="block text-sm font-medium text-[#374151] mb-2">
               Categoría <span className="text-xs text-[#6B7280] font-normal">(opcional)</span>
             </label>
-            <select
-              name="category"
-              value={form.category}
-              onChange={handleChange}
-              disabled={loadingOptions}
-              className="w-full h-10 px-3 rounded-lg border border-[#E5E7EB] text-sm text-[#374151] focus:border-[#00A8CC] focus:ring-1 focus:ring-[#00A8CC] transition-colors duration-150"
-            >
-              <option value="">
-                {loadingOptions ? "Cargando..." : "Sin categoría"}
-              </option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="h-3.5 w-3.5 text-[#9CA3AF] absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <Input
+                  placeholder="Buscar categoría..."
+                  value={categorySearch}
+                  onChange={(e) => setCategorySearch(e.target.value)}
+                  className="h-10 pl-8 border-[#E5E7EB]"
+                  disabled={loadingOptions}
+                />
+              </div>
+
+              <div className="rounded-lg border border-[#E5E7EB] bg-white max-h-52 overflow-auto p-1">
+                <button
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, category: "" }))}
+                  className={`w-full text-left rounded-md px-2 py-1.5 text-sm transition-colors ${
+                    !form.category
+                      ? "bg-[#E0F2FE] text-[#002366]"
+                      : "text-[#374151] hover:bg-[#EEF2FF]"
+                  }`}
+                >
+                  Sin categoría
+                </button>
+
+                {loadingOptions ? (
+                  <p className="px-2 py-2 text-xs text-[#6B7280]">Cargando categorías...</p>
+                ) : visibleCategoryTree.length > 0 ? (
+                  <div className="space-y-0.5">
+                    {visibleCategoryTree.map((node) => (
+                      <CategoryTreeOption
+                        key={node.id}
+                        node={node}
+                        level={0}
+                        selectedCategory={form.category}
+                        forceExpanded={forceExpandCategories}
+                        expandedIds={expandedCategoryIds}
+                        onToggle={(id) => {
+                          setExpandedCategoryIds((prev) => {
+                            const updated = new Set(prev);
+                            if (updated.has(id)) {
+                              updated.delete(id);
+                            } else {
+                              updated.add(id);
+                            }
+                            return updated;
+                          });
+                        }}
+                        onSelect={(nodeSelected) =>
+                          setForm((prev) => ({ ...prev, category: nodeSelected.id }))
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="px-2 py-2 text-xs text-[#6B7280]">
+                    No encontramos categorías con ese término.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-[#374151] mb-2">
               Proveedor <span className="text-xs text-[#6B7280] font-normal">(opcional)</span>
             </label>
-            <select
-              name="vendor"
-              value={form.vendor}
-              onChange={handleChange}
-              disabled={loadingOptions}
-              className="w-full h-10 px-3 rounded-lg border border-[#E5E7EB] text-sm text-[#374151] focus:border-[#00A8CC] focus:ring-1 focus:ring-[#00A8CC] transition-colors duration-150"
-            >
-              <option value="">
-                {loadingOptions ? "Cargando..." : "Sin proveedor"}
-              </option>
-              {vendors.map((vendor) => (
-                <option key={vendor.id} value={vendor.id}>
-                  {vendor.name}
-                </option>
-              ))}
-            </select>
+
+            <div className="space-y-2">
+              <div className="relative">
+                <Building2 className="h-3.5 w-3.5 text-[#9CA3AF] absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <Input
+                  placeholder="Buscar proveedor..."
+                  value={vendorSearch}
+                  onChange={(e) => setVendorSearch(e.target.value)}
+                  className="h-10 pl-8 border-[#E5E7EB]"
+                  disabled={loadingOptions}
+                />
+              </div>
+
+              <div className="rounded-lg border border-[#E5E7EB] bg-white max-h-52 overflow-auto p-1">
+                <button
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, vendor: "" }))}
+                  className={`w-full text-left rounded-md px-2 py-1.5 text-sm transition-colors ${
+                    !form.vendor
+                      ? "bg-[#E0F2FE] text-[#002366]"
+                      : "text-[#374151] hover:bg-[#EEF2FF]"
+                  }`}
+                >
+                  Sin proveedor
+                </button>
+
+                {loadingOptions ? (
+                  <p className="px-2 py-2 text-xs text-[#6B7280]">Cargando proveedores...</p>
+                ) : visibleVendors.length > 0 ? (
+                  visibleVendors.map((vendor) => (
+                    <button
+                      key={vendor.id}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, vendor: vendor.id }))}
+                      className={`w-full text-left rounded-md px-2 py-1.5 text-sm transition-colors ${
+                        String(form.vendor) === String(vendor.id)
+                          ? "bg-[#E0F2FE] text-[#002366]"
+                          : "text-[#374151] hover:bg-[#EEF2FF]"
+                      }`}
+                    >
+                      {vendor.name}
+                    </button>
+                  ))
+                ) : (
+                  <p className="px-2 py-2 text-xs text-[#6B7280]">
+                    No encontramos proveedores con ese término.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -302,7 +494,7 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
 
         {/* Actions */}
         <div className="flex justify-end gap-3 pt-4 border-t border-[#E5E7EB]">
-          <Button 
+          <Button
             variant="ghost"
             onClick={onClose}
             disabled={loading}
@@ -311,7 +503,7 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
             Cancelar
           </Button>
 
-          <Button 
+          <Button
             onClick={handleSubmit}
             disabled={loading || loadingOptions}
             className="bg-[#002366] text-white hover:bg-[#003380]"

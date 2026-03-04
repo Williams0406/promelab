@@ -1,18 +1,122 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { adminAPI } from "@/lib/api";
 import Modal from "@/components/ui/Modal";
 import ProductImagesUploader from "./ProductImagesUploader";
 import TechnicalSpecsEditor from "./TechnicalSpecsEditor";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Tag, DollarSign } from "lucide-react";
+import { Package, Tag, Search, ChevronDown, ChevronRight, Building2 } from "lucide-react";
+
+function filterCategoryTree(nodes, query) {
+  if (!query.trim()) return nodes;
+
+  const normalizedQuery = query.toLowerCase();
+
+  return nodes
+    .map((node) => {
+      const filteredChildren = filterCategoryTree(node.children || [], query);
+      const matchesNode = node.name.toLowerCase().includes(normalizedQuery);
+
+      if (matchesNode || filteredChildren.length > 0) {
+        return {
+          ...node,
+          children: filteredChildren,
+        };
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+}
+
+function hasCategoryInTree(nodes, categoryId) {
+  for (const node of nodes) {
+    if (String(node.id) === String(categoryId)) return true;
+    if (node.children?.length && hasCategoryInTree(node.children, categoryId)) return true;
+  }
+  return false;
+}
+
+function CategoryTreeOption({
+  node,
+  level,
+  selectedCategory,
+  onSelect,
+  expandedIds,
+  onToggle,
+  forceExpanded,
+}) {
+  const hasChildren = node.children && node.children.length > 0;
+  const isExpanded = forceExpanded || expandedIds.has(node.id);
+  const isSelected = String(selectedCategory) === String(node.id);
+
+  return (
+    <div>
+      <div
+        className={`group flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors ${
+          isSelected ? "bg-[#E0F2FE] text-[#002366]" : "hover:bg-[#EEF2FF] text-[#374151]"
+        }`}
+        style={{ paddingLeft: `${0.5 + level * 1}rem` }}
+      >
+        {hasChildren ? (
+          <button
+            type="button"
+            onClick={() => onToggle(node.id)}
+            className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-[#E5E7EB]"
+            aria-label={isExpanded ? "Contraer" : "Expandir"}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-3.5 w-3.5 text-[#6B7280]" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 text-[#6B7280]" />
+            )}
+          </button>
+        ) : (
+          <span className="h-5 w-5" />
+        )}
+
+        <button
+          type="button"
+          onClick={() => onSelect(node)}
+          className="flex-1 text-left truncate"
+          title={node.name}
+        >
+          {node.name}
+        </button>
+      </div>
+
+      {hasChildren && isExpanded && (
+        <div className="mt-0.5 space-y-0.5">
+          {node.children.map((child) => (
+            <CategoryTreeOption
+              key={child.id}
+              node={child}
+              level={level + 1}
+              selectedCategory={selectedCategory}
+              onSelect={onSelect}
+              expandedIds={expandedIds}
+              onToggle={onToggle}
+              forceExpanded={forceExpanded}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProductDetailModal({ productId, onClose, onSaved }) {
   const [product, setProduct] = useState(null);
+  const [categoryTree, setCategoryTree] = useState([]);
+  const [vendors, setVendors] = useState([]);
+  const [loadingFilters, setLoadingFilters] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [categorySearch, setCategorySearch] = useState("");
+  const [vendorSearch, setVendorSearch] = useState("");
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState(new Set());
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -34,6 +138,43 @@ export default function ProductDetailModal({ productId, onClose, onSaved }) {
     fetchProduct();
   }, [productId]);
 
+  useEffect(() => {
+    if (!editing) return;
+
+    async function fetchFilters() {
+      setLoadingFilters(true);
+      try {
+        const [categoryRes, vendorRes] = await Promise.all([
+          adminAPI.getCategoryTree(),
+          adminAPI.getVendors(),
+        ]);
+
+        setCategoryTree(Array.isArray(categoryRes.data) ? categoryRes.data : []);
+        setVendors(vendorRes.data?.results || []);
+      } catch (err) {
+        console.error(err);
+        setError("No se pudieron cargar las categorías y proveedores.");
+      } finally {
+        setLoadingFilters(false);
+      }
+    }
+
+    fetchFilters();
+  }, [editing]);
+
+  const visibleCategoryTree = useMemo(
+    () => filterCategoryTree(categoryTree, categorySearch),
+    [categoryTree, categorySearch]
+  );
+
+  const visibleVendors = useMemo(() => {
+    if (!vendorSearch.trim()) return vendors;
+    const query = vendorSearch.toLowerCase();
+    return vendors.filter((vendor) => vendor.name.toLowerCase().includes(query));
+  }, [vendors, vendorSearch]);
+
+  const forceExpandCategories = !!categorySearch.trim();
+
   const handleSave = async () => {
     setError(null);
     setSaving(true);
@@ -44,6 +185,8 @@ export default function ProductDetailModal({ productId, onClose, onSaved }) {
         description: product.description,
         price: product.price,
         promo_price: product.promo_price || null,
+        category: product.category || null,
+        vendor: product.vendor || null,
         is_active: product.is_active,
         is_featured: product.is_featured,
         technical_specs: product.technical_specs,
@@ -70,6 +213,11 @@ export default function ProductDetailModal({ productId, onClose, onSaved }) {
       </Modal>
     );
   }
+
+  const selectedCategoryIsAvailable = hasCategoryInTree(
+    categoryTree,
+    product.category
+  );
 
   return (
     <Modal 
@@ -224,18 +372,154 @@ export default function ProductDetailModal({ productId, onClose, onSaved }) {
               <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-1">
                 Categoría
               </p>
-              <p className="text-sm text-[#374151]">
-                {product.category_name || "Sin categoría"}
-              </p>
+              {editing ? (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search className="h-3.5 w-3.5 text-[#9CA3AF] absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <Input
+                      placeholder="Buscar categoría..."
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      className="h-9 pl-8 border-[#D1D5DB] bg-white"
+                      disabled={loadingFilters}
+                    />
+                  </div>
+
+                  <div className="rounded-lg border border-[#D1D5DB] bg-white max-h-52 overflow-auto p-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setProduct({ ...product, category: null, category_name: "" })
+                      }
+                      className={`w-full text-left rounded-md px-2 py-1.5 text-sm transition-colors ${
+                        !product.category
+                          ? "bg-[#E0F2FE] text-[#002366]"
+                          : "text-[#374151] hover:bg-[#EEF2FF]"
+                      }`}
+                    >
+                      Sin categoría
+                    </button>
+
+                    {loadingFilters ? (
+                      <p className="px-2 py-2 text-xs text-[#6B7280]">Cargando categorías...</p>
+                    ) : visibleCategoryTree.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {visibleCategoryTree.map((node) => (
+                          <CategoryTreeOption
+                            key={node.id}
+                            node={node}
+                            level={0}
+                            selectedCategory={product.category}
+                            forceExpanded={forceExpandCategories}
+                            expandedIds={expandedCategoryIds}
+                            onToggle={(id) => {
+                              setExpandedCategoryIds((prev) => {
+                                const updated = new Set(prev);
+                                if (updated.has(id)) {
+                                  updated.delete(id);
+                                } else {
+                                  updated.add(id);
+                                }
+                                return updated;
+                              });
+                            }}
+                            onSelect={(nodeSelected) =>
+                              setProduct({
+                                ...product,
+                                category: nodeSelected.id,
+                                category_name: nodeSelected.name,
+                              })
+                            }
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="px-2 py-2 text-xs text-[#6B7280]">
+                        No encontramos categorías con ese término.
+                      </p>
+                    )}
+                  </div>
+
+                  {!selectedCategoryIsAvailable && product.category && (
+                    <p className="text-xs text-[#B45309]">
+                      La categoría seleccionada ya no está disponible. Elige una nueva.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-[#374151]">
+                  {product.category_name || "Sin categoría"}
+                </p>
+              )}
             </div>
 
             <div>
               <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-1">
                 Proveedor
               </p>
-              <p className="text-sm text-[#374151]">
-                {product.vendor_name || "Sin proveedor"}
-              </p>
+              {editing ? (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Building2 className="h-3.5 w-3.5 text-[#9CA3AF] absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <Input
+                      placeholder="Buscar proveedor..."
+                      value={vendorSearch}
+                      onChange={(e) => setVendorSearch(e.target.value)}
+                      className="h-9 pl-8 border-[#D1D5DB] bg-white"
+                      disabled={loadingFilters}
+                    />
+                  </div>
+
+                  <div className="rounded-lg border border-[#D1D5DB] bg-white max-h-40 overflow-auto p-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setProduct({ ...product, vendor: null, vendor_name: "" })
+                      }
+                      className={`w-full text-left rounded-md px-2 py-1.5 text-sm transition-colors ${
+                        !product.vendor
+                          ? "bg-[#E0F2FE] text-[#002366]"
+                          : "text-[#374151] hover:bg-[#EEF2FF]"
+                      }`}
+                    >
+                      Sin proveedor
+                    </button>
+
+                    {loadingFilters ? (
+                      <p className="px-2 py-2 text-xs text-[#6B7280]">Cargando proveedores...</p>
+                    ) : visibleVendors.length > 0 ? (
+                      visibleVendors.map((vendor) => (
+                        <button
+                          key={vendor.id}
+                          type="button"
+                          onClick={() =>
+                            setProduct({
+                              ...product,
+                              vendor: vendor.id,
+                              vendor_name: vendor.name,
+                            })
+                          }
+                          className={`w-full text-left rounded-md px-2 py-1.5 text-sm transition-colors ${
+                            String(product.vendor) === String(vendor.id)
+                              ? "bg-[#E0F2FE] text-[#002366]"
+                              : "text-[#374151] hover:bg-[#EEF2FF]"
+                          }`}
+                        >
+                          {vendor.name}
+                        </button>
+                      ))
+                    ) : (
+                      <p className="px-2 py-2 text-xs text-[#6B7280]">
+                        No encontramos proveedores con ese término.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-[#374151]">
+                  {product.vendor_name || "Sin proveedor"}
+                </p>
+              )}
             </div>
 
             <div className="pt-3 border-t border-[#E5E7EB]">

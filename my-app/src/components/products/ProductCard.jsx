@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Package } from "lucide-react";
+import { Package, ShieldCheck } from "lucide-react";
 import AddToCartButton from "@/components/cart/AddToCartButton";
 
 export default function ProductCard({ product }) {
@@ -14,69 +14,80 @@ export default function ProductCard({ product }) {
   const displayPrice = hasPromo ? product.promo_price : product.price;
 
   return (
-    <div className="group flex flex-col rounded-lg border border-[#E5E7EB] bg-white shadow-sm hover:border-[#00A8CC] hover:shadow-md transition-all duration-150">
+    <div className="group flex flex-col rounded-lg border border-[#E5E7EB] bg-white shadow-sm hover:shadow-md hover:border-[#00A8CC] hover:-translate-y-1 transition-all duration-200 ease-out h-full overflow-hidden">
       
-      {/* IMAGEN */}
+      {/* SECCIÓN DE IMAGEN: Blanco Clínico y Altura Incrementada */}
       <Link
         href={`/products/${product.slug}`}
-        className="relative block h-48 w-full bg-[#F5F7FA] rounded-t-lg overflow-hidden"
+        className="relative block h-72 w-full bg-white overflow-hidden border-b border-[#F5F7FA]"
       >
         {imageSrc ? (
           <img
             src={imageSrc}
             alt={product.name}
-            className="h-full w-full object-contain p-4 group-hover:scale-105 transition-transform duration-200"
+            className="h-full w-full object-contain p-8 group-hover:scale-105 transition-transform duration-500 ease-in-out"
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <Package className="h-12 w-12 text-[#6B7280]" />
+          <div className="flex h-full w-full items-center justify-center bg-[#F5F7FA]">
+            <Package className="h-16 w-16 text-[#687280]" />
           </div>
         )}
 
-        {/* Badge restricción (si aplica) */}
+        {/* Badge de Restricción: Estilo Institucional */}
         {product.is_restricted && (
-          <div className="absolute top-2 right-2">
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-[#FFFBEB] text-[#D97706] border border-[#F59E0B]">
-              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
+          <div className="absolute top-4 left-4">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] uppercase tracking-wider font-bold bg-amber-50 text-amber-700 border border-amber-200">
+              <ShieldCheck className="h-3.5 w-3.5" />
               Controlado
+            </span>
+          </div>
+        )}
+
+        {/* Badge de Descuento */}
+        {hasPromo && (
+          <div className="absolute top-4 right-4">
+            <span className="px-2 py-1 rounded text-xs font-bold bg-[#2ECC71] text-white shadow-sm">
+              -{Math.round(((product.price - product.promo_price) / product.price) * 100)}%
             </span>
           </div>
         )}
       </Link>
 
-      {/* INFO */}
-      <div className="flex flex-1 flex-col p-4">
+      {/* INFO DEL PRODUCTO: Jerarquía Estricta */}
+      <div className="flex flex-1 flex-col p-6">
+        {product.category_name && (
+          <span className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#00A8CC]">
+            {product.category_name}
+          </span>
+        )}
+
         <Link href={`/products/${product.slug}`}>
-          <h3 className="text-sm font-semibold text-[#002366] line-clamp-2 hover:text-[#00A8CC] transition-colors duration-150">
+          <h3 className="text-[15px] font-bold text-[#374151] line-clamp-2 leading-tight group-hover:text-[#002366] transition-colors duration-200">
             {product.name}
           </h3>
         </Link>
 
-        {product.category_name && (
-          <p className="mt-1 text-xs text-[#6B7280]">
-            {product.category_name}
-          </p>
-        )}
-
-        {/* Precio y acción */}
-        <div className="mt-auto pt-4 flex items-center justify-between gap-3">
-          <div>
+        {/* Espaciado para alinear precios y botón al fondo */}
+        <div className="mt-auto pt-6 flex items-center justify-between">
+          <div className="flex flex-col">
             {hasPromo && (
-              <span className="block text-xs text-[#6B7280] line-through">
+              <span className="text-xs text-[#687280] line-through decoration-red-400/40">
                 S/ {parseFloat(product.price).toFixed(2)}
               </span>
             )}
-            <span className={`block text-base font-semibold ${
+            <span className={`text-xl font-black tracking-tight ${
               hasPromo ? "text-[#2ECC71]" : "text-[#002366]"
             }`}>
-              S/ {parseFloat(displayPrice).toFixed(2)}
+              <small className="text-sm font-bold mr-0.5">S/</small>
+              {parseFloat(displayPrice).toFixed(2)}
             </span>
           </div>
 
-          <AddToCartButton product={product} size="sm" />
+          {/* Botón de acción: El movimiento guía, no entretiene */}
+          <div className="transition-transform duration-200 active:scale-95">
+            <AddToCartButton product={product} size="md" />
+          </div>
         </div>
       </div>
     </div>

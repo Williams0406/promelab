@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Table from "@/components/ui/Table";
 import { Button } from "@/components/ui/button";
 import { adminAPI } from "@/lib/api";
@@ -9,8 +9,9 @@ import ProductForm from "@/components/products/ProductForm";
 import ProductDetailModal from "@/components/products/ProductDetailModal";
 import ProductDeleteDialog from "@/components/products/ProductDeleteDialog";
 import Pagination from "@/components/common/Pagination";
-import { Loader2, AlertCircle, Plus, Package } from "lucide-react";
+import { Loader2, AlertCircle, Plus, Package, Download } from "lucide-react";
 import ProductImportModal from "@/components/products/ProductImportModal";
+import ProductExportModal from "@/components/products/ProductExportModal";
 
 export default function AdminProductsPage() {
   // 🔬 ESTADO ORGANIZADO
@@ -21,11 +22,10 @@ export default function AdminProductsPage() {
   // 🔬 PAGINACIÓN
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
 
   // 🔬 MODALES (solo uno activo a la vez)
   const [modal, setModal] = useState({
-    type: null, // 'create' | 'edit' | 'view' | 'delete'
+    type: null, // 'create' | 'edit' | 'view' | 'delete' | 'import' | 'export'
     data: null,
   });
 
@@ -41,23 +41,26 @@ export default function AdminProductsPage() {
   const [ordering, setOrdering] = useState("-created_at");
 
   // 🔬 FETCH PRODUCTOS
-  async function fetchProducts(pageNumber = page, customFilters = filters) {
+  async function fetchProducts() {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await adminAPI.getProducts({
-        page: pageNumber,
-        page_size: pageSize,
-        search: customFilters.search || undefined,
-        category: customFilters.category || undefined,
-        vendor: customFilters.vendor || undefined,
-        ordering,
-      });
+      const allProducts = [];
+      let nextPage = 1;
 
-      setProducts(res.data.results || []);
-      setTotalItems(res.data.count || 0);
-      setPage(pageNumber);
+      while (nextPage) {
+        const res = await adminAPI.getProducts({
+          page: nextPage,
+          page_size: 100,
+          ordering,
+        });
+
+        allProducts.push(...(res.data.results || []));
+        nextPage = res.data.next ? nextPage + 1 : null;
+      }
+
+      setProducts(allProducts);
     } catch (err) {
       console.error("Error cargando productos:", err);
       setError("No se pudieron cargar los productos");
@@ -67,15 +70,19 @@ export default function AdminProductsPage() {
   }
 
   useEffect(() => {
-    fetchProducts(1, debouncedFilters);
-  }, [debouncedFilters, ordering]);
+    fetchProducts();
+  }, [ordering]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedFilters]);
 
   // 🔬 HANDLERS CON FEEDBACK
   async function handleCreate(data) {
     try {
       const res = await adminAPI.createProduct(data);
       showSuccess("Producto creado correctamente");
-      fetchProducts(1);
+      fetchProducts();
       return res.data;
     } catch (err) {
       console.error("Error creando producto:", err);
@@ -88,7 +95,7 @@ export default function AdminProductsPage() {
       await adminAPI.updateProduct(modal.data.id, data);
       setModal({ type: null, data: null });
       showSuccess("Producto actualizado correctamente");
-      fetchProducts(page);
+      fetchProducts();
     } catch (err) {
       console.error("Error actualizando producto:", err);
       throw err;
@@ -100,13 +107,7 @@ export default function AdminProductsPage() {
       await adminAPI.deleteProduct(modal.data.id);
       setModal({ type: null, data: null });
       showSuccess("Producto eliminado correctamente");
-      
-      // Si era el único en la página, volver a la anterior
-      const newTotal = totalItems - 1;
-      const newTotalPages = Math.ceil(newTotal / pageSize);
-      const targetPage = page > newTotalPages ? newTotalPages : page;
-      
-      fetchProducts(targetPage || 1);
+      fetchProducts();
     } catch (err) {
       console.error("Error eliminando producto:", err);
       const message =
@@ -132,6 +133,58 @@ export default function AdminProductsPage() {
 
     return debounced;
   }
+
+
+  function normalizeText(value) {
+    return (value || "")
+      .toString()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  }
+
+  const filteredProducts = useMemo(() => {
+    const searchFilter = normalizeText(debouncedFilters.search);
+    const categoryFilter = normalizeText(debouncedFilters.category);
+    const vendorFilter = normalizeText(debouncedFilters.vendor);
+
+    return products.filter((product) => {
+      const name = normalizeText(product.name);
+      const description = normalizeText(product.description);
+      const categoryName = normalizeText(product.category_name);
+      const vendorName = normalizeText(product.vendor_name);
+
+      const searchMatch =
+        !searchFilter ||
+        name.includes(searchFilter) ||
+        description.includes(searchFilter);
+      const categoryMatch =
+        !categoryFilter || categoryName.includes(categoryFilter);
+      const vendorMatch = !vendorFilter || vendorName.includes(vendorFilter);
+
+      return searchMatch && categoryMatch && vendorMatch;
+    });
+  }, [products, debouncedFilters]);
+
+  const totalPages = Math.ceil(filteredProducts.length / pageSize);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredProducts.slice(start, end);
+  }, [filteredProducts, page, pageSize]);
+
+  useEffect(() => {
+    if (totalPages === 0 && page !== 1) {
+      setPage(1);
+      return;
+    }
+
+    if (page > totalPages && totalPages > 0) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   // 🔬 COLUMNAS CON JERARQUÍA
   const columns = [
@@ -191,7 +244,7 @@ export default function AdminProductsPage() {
           <AlertCircle className="h-12 w-12 text-[#E5533D] mx-auto" />
           <p className="text-sm text-[#374151] font-medium">{error}</p>
           <button
-            onClick={() => fetchProducts(page)}
+            onClick={() => fetchProducts()}
             className="text-sm text-[#002366] underline hover:no-underline"
           >
             Reintentar
@@ -201,7 +254,6 @@ export default function AdminProductsPage() {
     );
   }
 
-  const totalPages = Math.ceil(totalItems / pageSize);
 
   return (
     <div className="space-y-6">
@@ -239,6 +291,15 @@ export default function AdminProductsPage() {
             className="text-sm"
           >
             Importar
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => setModal({ type: "export", data: null })}
+            className="text-sm"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
           </Button>
 
           <Button
@@ -282,7 +343,7 @@ export default function AdminProductsPage() {
             onChange={(e) =>
               setFilters({ ...filters, category: e.target.value })
             }
-            placeholder="ID o slug"
+            placeholder="Filtrar por nombre de categoría"
             className="border border-[#D1D5DB] rounded-md px-3 py-2 text-sm w-48"
           />
         </div>
@@ -346,7 +407,7 @@ export default function AdminProductsPage() {
           </div>
         )}
 
-        {products.length === 0 ? (
+        {paginatedProducts.length === 0 ? (
           <div className="bg-white border border-[#E5E7EB] rounded-lg p-12 text-center">
             <Package className="h-16 w-16 text-[#E5E7EB] mx-auto mb-4" />
             <p className="text-sm text-[#6B7280] font-medium">
@@ -357,7 +418,7 @@ export default function AdminProductsPage() {
             </p>
           </div>
         ) : (
-          <Table columns={columns} data={products} />
+          <Table columns={columns} data={paginatedProducts} />
         )}
       </div>
 
@@ -366,9 +427,9 @@ export default function AdminProductsPage() {
         <Pagination
           page={page}
           totalPages={totalPages}
-          onChange={(newPage) => fetchProducts(newPage)}
+          onChange={(newPage) => setPage(newPage)}
           itemsPerPage={pageSize}
-          totalItems={totalItems}
+          totalItems={filteredProducts.length}
         />
       )}
 
@@ -416,7 +477,19 @@ export default function AdminProductsPage() {
           onClose={() => setModal({ type: null, data: null })}
           onSuccess={() => {
             showSuccess("Importación completada correctamente");
-            fetchProducts(1);
+            fetchProducts();
+          }}
+        />
+      )}
+
+      {modal.type === "export" && (
+        <ProductExportModal
+          open={true}
+          filters={debouncedFilters}
+          ordering={ordering}
+          onClose={() => setModal({ type: null, data: null })}
+          onSuccess={(count) => {
+            showSuccess(`Exportación completada (${count} productos)`);
           }}
         />
       )}
