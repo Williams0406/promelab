@@ -81,6 +81,10 @@ class AdminImportView(APIView):
 
         for _, row in df.iterrows():
 
+            def has_mapping(field):
+                column = mapping.get(field)
+                return bool(column and str(column).strip())
+
             def get_value(field):
                 column = mapping.get(field)
                 if not column:
@@ -104,12 +108,14 @@ class AdminImportView(APIView):
             if not name:
                 continue
 
+            sku = get_value("sku")
+
             # ------------------
             # Relaciones por NAME
             # ------------------
 
-            category_name = get_value("category")
-            vendor_name = get_value("vendor")
+            category_name = get_value("category") if has_mapping("category") else None
+            vendor_name = get_value("vendor") if has_mapping("vendor") else None
 
             category = None
             if category_name:
@@ -123,21 +129,38 @@ class AdminImportView(APIView):
                     name=vendor_name
                 )
 
-            product_data = {
-                "description": get_value("description"),
-                "technical_specs": get_value("technical_specs"),
-                "price": Decimal(get_value("price") or 0),
-                "promo_price": (
-                    Decimal(get_value("promo_price"))
-                    if get_value("promo_price")
-                    else None
-                ),
-                "category": category,
-                "vendor": vendor,
-                "is_active": True,
-            }
+            product_data = {"name": name}
 
-            product = Product.objects.filter(name=name).first()
+            if has_mapping("sku"):
+                product_data["sku"] = sku or None
+
+            if has_mapping("description"):
+                product_data["description"] = get_value("description") or ""
+
+            if has_mapping("technical_specs"):
+                product_data["technical_specs"] = get_value("technical_specs") or None
+
+            if has_mapping("price"):
+                product_data["price"] = Decimal(get_value("price") or 0)
+
+            if has_mapping("promo_price"):
+                promo_price = get_value("promo_price")
+                product_data["promo_price"] = (
+                    Decimal(promo_price) if promo_price else None
+                )
+
+            if has_mapping("category"):
+                product_data["category"] = category
+
+            if has_mapping("vendor"):
+                product_data["vendor"] = vendor
+
+            product = None
+            if sku:
+                product = Product.objects.filter(sku=sku).first()
+
+            if not product:
+                product = Product.objects.filter(name=name).first()
 
             if product:
                 for key, value in product_data.items():
@@ -145,10 +168,19 @@ class AdminImportView(APIView):
                 product.save()
                 updated += 1
             else:
+                create_data = {
+                    "description": "",
+                    "price": Decimal("0"),
+                    "promo_price": None,
+                    "technical_specs": None,
+                    "category": None,
+                    "vendor": None,
+                    "is_active": True,
+                }
+                create_data.update(product_data)
                 Product.objects.create(
-                    name=name,
                     created_by=user,
-                    **product_data
+                    **create_data
                 )
                 created += 1
 

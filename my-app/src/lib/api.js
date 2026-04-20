@@ -199,6 +199,8 @@ export const adminAPI = {
     api.patch(`/admin/products/${id}/`, data),
   deleteProduct: (id) =>
     api.delete(`/admin/products/${id}/`),
+  bulkDeleteProducts: (ids) =>
+    api.post("/admin/products/bulk-delete/", { ids }),
   getProduct: (id) =>
     api.get(`/admin/products/${id}/`),
 

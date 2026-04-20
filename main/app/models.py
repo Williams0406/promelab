@@ -92,6 +92,7 @@ class Product(models.Model):
 
     name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True, blank=True, max_length=255)
+    sku = models.CharField(max_length=100, unique=True, null=True, blank=True)
 
     description = models.TextField()
     technical_specs = models.JSONField(blank=True, null=True)
@@ -108,6 +109,7 @@ class Product(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        self.sku = self.sku.strip() if self.sku else None
         if not self.slug:
             base_slug = slugify(self.name)
             slug = base_slug

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertCircle, Download, Loader2, Package, Plus, Trash2 } from "lucide-react";
 import Table from "@/components/ui/Table";
 import { Button } from "@/components/ui/button";
 import { adminAPI } from "@/lib/api";
@@ -9,28 +10,44 @@ import ProductForm from "@/components/products/ProductForm";
 import ProductDetailModal from "@/components/products/ProductDetailModal";
 import ProductDeleteDialog from "@/components/products/ProductDeleteDialog";
 import Pagination from "@/components/common/Pagination";
-import { Loader2, AlertCircle, Plus, Package, Download } from "lucide-react";
 import ProductImportModal from "@/components/products/ProductImportModal";
 import ProductExportModal from "@/components/products/ProductExportModal";
 
+function useDebounce(value, delay = 400) {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
+}
+
+function normalizeText(value) {
+  return (value || "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 export default function AdminProductsPage() {
-  // 🔬 ESTADO ORGANIZADO
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // 🔬 PAGINACIÓN
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
+  const pageSize = 10;
 
-  // 🔬 MODALES (solo uno activo a la vez)
   const [modal, setModal] = useState({
-    type: null, // 'create' | 'edit' | 'view' | 'delete' | 'import' | 'export'
+    type: null,
     data: null,
   });
 
-  // 🔬 FEEDBACK
-  const [successMessage, setSuccessMessage] = useState(null);
+  const [feedback, setFeedback] = useState(null);
+  const feedbackTimerRef = useRef(null);
+  const selectAllRef = useRef(null);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -39,9 +56,29 @@ export default function AdminProductsPage() {
   });
   const debouncedFilters = useDebounce(filters, 400);
   const [ordering, setOrdering] = useState("-created_at");
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
 
-  // 🔬 FETCH PRODUCTOS
-  async function fetchProducts() {
+  function showFeedback(type, message) {
+    setFeedback({ type, message });
+
+    if (feedbackTimerRef.current) {
+      clearTimeout(feedbackTimerRef.current);
+    }
+
+    feedbackTimerRef.current = setTimeout(() => {
+      setFeedback(null);
+    }, 4000);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current) {
+        clearTimeout(feedbackTimerRef.current);
+      }
+    };
+  }, []);
+
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -61,88 +98,23 @@ export default function AdminProductsPage() {
       }
 
       setProducts(allProducts);
+      const validIds = new Set(allProducts.map((product) => product.id));
+      setSelectedProductIds((prev) => prev.filter((id) => validIds.has(id)));
     } catch (err) {
       console.error("Error cargando productos:", err);
-      setError("No se pudieron cargar los productos");
+      setError("No se pudieron cargar los productos.");
     } finally {
       setLoading(false);
     }
-  }
+  }, [ordering]);
 
   useEffect(() => {
     fetchProducts();
-  }, [ordering]);
+  }, [fetchProducts]);
 
   useEffect(() => {
     setPage(1);
   }, [debouncedFilters]);
-
-  // 🔬 HANDLERS CON FEEDBACK
-  async function handleCreate(data) {
-    try {
-      const res = await adminAPI.createProduct(data);
-      showSuccess("Producto creado correctamente");
-      fetchProducts();
-      return res.data;
-    } catch (err) {
-      console.error("Error creando producto:", err);
-      throw err; // El form manejará el error
-    }
-  }
-
-  async function handleUpdate(data) {
-    try {
-      await adminAPI.updateProduct(modal.data.id, data);
-      setModal({ type: null, data: null });
-      showSuccess("Producto actualizado correctamente");
-      fetchProducts();
-    } catch (err) {
-      console.error("Error actualizando producto:", err);
-      throw err;
-    }
-  }
-
-  async function handleDelete() {
-    try {
-      await adminAPI.deleteProduct(modal.data.id);
-      setModal({ type: null, data: null });
-      showSuccess("Producto eliminado correctamente");
-      fetchProducts();
-    } catch (err) {
-      console.error("Error eliminando producto:", err);
-      const message =
-        err.response?.data?.detail || "No se pudo eliminar el producto";
-      throw new Error(message);
-    }
-  }
-
-  // 🔬 HELPER: MOSTRAR ÉXITO
-  function showSuccess(message) {
-    setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(null), 3000);
-  }
-  
-
-  function useDebounce(value, delay = 400) {
-    const [debounced, setDebounced] = useState(value);
-
-    useEffect(() => {
-      const timer = setTimeout(() => setDebounced(value), delay);
-      return () => clearTimeout(timer);
-    }, [value, delay]);
-
-    return debounced;
-  }
-
-
-  function normalizeText(value) {
-    return (value || "")
-      .toString()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim();
-  }
 
   const filteredProducts = useMemo(() => {
     const searchFilter = normalizeText(debouncedFilters.search);
@@ -150,6 +122,7 @@ export default function AdminProductsPage() {
     const vendorFilter = normalizeText(debouncedFilters.vendor);
 
     return products.filter((product) => {
+      const sku = normalizeText(product.sku);
       const name = normalizeText(product.name);
       const description = normalizeText(product.description);
       const categoryName = normalizeText(product.category_name);
@@ -157,6 +130,7 @@ export default function AdminProductsPage() {
 
       const searchMatch =
         !searchFilter ||
+        sku.includes(searchFilter) ||
         name.includes(searchFilter) ||
         description.includes(searchFilter);
       const categoryMatch =
@@ -171,9 +145,8 @@ export default function AdminProductsPage() {
 
   const paginatedProducts = useMemo(() => {
     const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredProducts.slice(start, end);
-  }, [filteredProducts, page, pageSize]);
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, page]);
 
   useEffect(() => {
     if (totalPages === 0 && page !== 1) {
@@ -186,13 +159,201 @@ export default function AdminProductsPage() {
     }
   }, [page, totalPages]);
 
-  // 🔬 COLUMNAS CON JERARQUÍA
+  const selectedIdsSet = useMemo(
+    () => new Set(selectedProductIds),
+    [selectedProductIds]
+  );
+
+  const selectedProducts = useMemo(
+    () => products.filter((product) => selectedIdsSet.has(product.id)),
+    [products, selectedIdsSet]
+  );
+
+  const paginatedProductIds = useMemo(
+    () => paginatedProducts.map((product) => product.id),
+    [paginatedProducts]
+  );
+
+  const allVisibleSelected =
+    paginatedProductIds.length > 0 &&
+    paginatedProductIds.every((id) => selectedIdsSet.has(id));
+
+  const someVisibleSelected =
+    paginatedProductIds.some((id) => selectedIdsSet.has(id)) &&
+    !allVisibleSelected;
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someVisibleSelected;
+    }
+  }, [someVisibleSelected]);
+
+  function toggleProductSelection(productId, checked) {
+    setSelectedProductIds((prev) => {
+      if (checked) {
+        return prev.includes(productId) ? prev : [...prev, productId];
+      }
+
+      return prev.filter((id) => id !== productId);
+    });
+  }
+
+  function toggleVisibleSelection(checked) {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+
+      paginatedProductIds.forEach((id) => {
+        if (checked) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+      });
+
+      return Array.from(next);
+    });
+  }
+
+  async function handleCreate(data) {
+    try {
+      const res = await adminAPI.createProduct(data);
+      showFeedback("success", "Producto creado correctamente.");
+      await fetchProducts();
+      return res.data;
+    } catch (err) {
+      console.error("Error creando producto:", err);
+      throw err;
+    }
+  }
+
+  async function handleUpdate(data) {
+    try {
+      await adminAPI.updateProduct(modal.data.id, data);
+      setModal({ type: null, data: null });
+      showFeedback("success", "Producto actualizado correctamente.");
+      await fetchProducts();
+    } catch (err) {
+      console.error("Error actualizando producto:", err);
+      throw err;
+    }
+  }
+
+  async function handleDelete() {
+    try {
+      await adminAPI.deleteProduct(modal.data.id);
+      setModal({ type: null, data: null });
+      setSelectedProductIds((prev) => prev.filter((id) => id !== modal.data.id));
+      showFeedback("success", "Producto eliminado correctamente.");
+      await fetchProducts();
+    } catch (err) {
+      console.error("Error eliminando producto:", err);
+      const message =
+        err.response?.data?.detail || "No se pudo eliminar el producto.";
+      throw new Error(message);
+    }
+  }
+
+  async function handleBulkDelete() {
+    const productsToDelete = Array.isArray(modal.data) ? modal.data : [];
+
+    if (productsToDelete.length === 0) {
+      setModal({ type: null, data: null });
+      return;
+    }
+
+    try {
+      const res = await adminAPI.bulkDeleteProducts(
+        productsToDelete.map((product) => product.id)
+      );
+
+      const deleted = res.data?.deleted || 0;
+      const failed = res.data?.failed || [];
+      const missing = res.data?.missing || [];
+      const failedIds = new Set(failed.map((item) => item.id));
+      const attemptedIds = new Set(productsToDelete.map((product) => product.id));
+
+      setModal({ type: null, data: null });
+      setSelectedProductIds((prev) =>
+        prev.filter((id) => {
+          if (!attemptedIds.has(id)) {
+            return true;
+          }
+
+          return failedIds.has(id);
+        })
+      );
+
+      await fetchProducts();
+
+      if (failed.length || missing.length) {
+        const parts = [];
+
+        if (deleted > 0) {
+          parts.push(`Se eliminaron ${deleted} producto${deleted === 1 ? "" : "s"}`);
+        }
+        if (failed.length > 0) {
+          parts.push(`${failed.length} no se pudieron eliminar`);
+        }
+        if (missing.length > 0) {
+          parts.push(`${missing.length} ya no estaban disponibles`);
+        }
+
+        showFeedback("error", `${parts.join(". ")}.`);
+        return;
+      }
+
+      showFeedback(
+        "success",
+        `Se eliminaron ${deleted} producto${deleted === 1 ? "" : "s"} correctamente.`
+      );
+    } catch (err) {
+      console.error("Error eliminando productos:", err);
+      const message =
+        err.response?.data?.detail || "No se pudieron eliminar los productos seleccionados.";
+      throw new Error(message);
+    }
+  }
+
   const columns = [
+    {
+      key: "select",
+      label: (
+        <input
+          ref={selectAllRef}
+          type="checkbox"
+          checked={allVisibleSelected}
+          onChange={(e) => toggleVisibleSelection(e.target.checked)}
+          aria-label="Seleccionar productos visibles"
+          className="h-4 w-4 accent-[#002366]"
+        />
+      ),
+      align: "center",
+      cell: (row) => (
+        <input
+          type="checkbox"
+          checked={selectedIdsSet.has(row.original.id)}
+          onChange={(e) =>
+            toggleProductSelection(row.original.id, e.target.checked)
+          }
+          aria-label={`Seleccionar ${row.original.name}`}
+          className="h-4 w-4 accent-[#002366]"
+        />
+      ),
+    },
     {
       key: "name",
       label: "Nombre",
       cell: (row) => (
         <div className="font-medium text-[#002366]">{row.original.name}</div>
+      ),
+    },
+    {
+      key: "sku",
+      label: "SKU",
+      cell: (row) => (
+        <span className="font-mono text-xs text-[#374151]">
+          {row.original.sku || "—"}
+        </span>
       ),
     },
     {
@@ -236,13 +397,12 @@ export default function AdminProductsPage() {
     },
   ];
 
-  // 🔬 ERROR STATE
   if (error && products.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <div className="text-center space-y-3">
-          <AlertCircle className="h-12 w-12 text-[#E5533D] mx-auto" />
-          <p className="text-sm text-[#374151] font-medium">{error}</p>
+      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+        <div className="space-y-3 text-center">
+          <AlertCircle className="mx-auto h-12 w-12 text-[#E5533D]" />
+          <p className="text-sm font-medium text-[#374151]">{error}</p>
           <button
             onClick={() => fetchProducts()}
             className="text-sm text-[#002366] underline hover:no-underline"
@@ -254,36 +414,59 @@ export default function AdminProductsPage() {
     );
   }
 
-
   return (
     <div className="space-y-6">
-      {/* 🔬 SUCCESS MESSAGE */}
-      {successMessage && (
-        <div className="bg-[#2ECC71]/10 border border-[#2ECC71]/20 rounded-lg px-4 py-3 flex items-center justify-between">
-          <p className="text-sm text-[#2ECC71] font-medium">
-            {successMessage}
+      {feedback && (
+        <div
+          className={`flex items-center justify-between rounded-lg border px-4 py-3 ${
+            feedback.type === "error"
+              ? "border-[#F59E0B]/30 bg-[#FFF7ED]"
+              : "border-[#2ECC71]/20 bg-[#2ECC71]/10"
+          }`}
+        >
+          <p
+            className={`text-sm font-medium ${
+              feedback.type === "error" ? "text-[#B45309]" : "text-[#2ECC71]"
+            }`}
+          >
+            {feedback.message}
           </p>
           <button
-            onClick={() => setSuccessMessage(null)}
-            className="text-[#2ECC71] hover:text-[#27AE60]"
+            onClick={() => setFeedback(null)}
+            className={
+              feedback.type === "error"
+                ? "text-[#B45309] hover:text-[#92400E]"
+                : "text-[#2ECC71] hover:text-[#27AE60]"
+            }
           >
             ×
           </button>
         </div>
       )}
 
-      {/* 🔬 HEADER CONSISTENTE */}
-      <div className="flex items-center justify-between pb-4 border-b border-[#E5E7EB]">
+      <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-4">
         <div>
-          <h1 className="text-xl font-semibold text-[#002366] tracking-tight">
+          <h1 className="text-xl font-semibold tracking-tight text-[#002366]">
             Productos
           </h1>
-          <p className="text-sm text-[#6B7280] mt-1">
+          <p className="mt-1 text-sm text-[#6B7280]">
             Gestión del catálogo científico
           </p>
         </div>
 
         <div className="flex gap-3">
+          {selectedProducts.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() =>
+                setModal({ type: "delete-multiple", data: selectedProducts })
+              }
+              className="border-[#E5533D] text-[#E5533D] hover:bg-[#FEF2F2]"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Eliminar seleccionados ({selectedProducts.length})
+            </Button>
+          )}
 
           <Button
             variant="outline"
@@ -298,122 +481,115 @@ export default function AdminProductsPage() {
             onClick={() => setModal({ type: "export", data: null })}
             className="text-sm"
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
 
           <Button
             onClick={() => setModal({ type: "create", data: null })}
-            className="bg-[#002366] hover:bg-[#001a4d] text-white font-medium text-sm px-4 py-2 rounded-lg transition-colors duration-150"
+            className="rounded-lg bg-[#002366] px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-[#001a4d]"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Nuevo Producto
           </Button>
-
         </div>
       </div>
 
-      {/* 🔬 FILTROS */}
-      <div className="bg-white border border-[#E5E7EB] rounded-lg p-4 flex flex-wrap gap-4 items-end">
-
-        {/* Buscar */}
+      <div className="flex flex-wrap items-end gap-4 rounded-lg border border-[#E5E7EB] bg-white p-4">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-[#374151]">
-            Buscar
-          </label>
+          <label className="text-xs font-medium text-[#374151]">Buscar</label>
           <input
             type="text"
             value={filters.search}
             onChange={(e) =>
               setFilters({ ...filters, search: e.target.value })
             }
-            placeholder="Nombre del producto"
-            className="border border-[#D1D5DB] rounded-md px-3 py-2 text-sm w-64"
+            placeholder="Nombre, SKU o descripción"
+            className="w-64 rounded-md border border-[#D1D5DB] px-3 py-2 text-sm"
           />
         </div>
 
-        {/* Categoría */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-[#374151]">
-            Categoría
-          </label>
+          <label className="text-xs font-medium text-[#374151]">Categoría</label>
           <input
             type="text"
             value={filters.category}
             onChange={(e) =>
               setFilters({ ...filters, category: e.target.value })
             }
-            placeholder="Filtrar por nombre de categoría"
-            className="border border-[#D1D5DB] rounded-md px-3 py-2 text-sm w-48"
+            placeholder="Filtrar por categoría"
+            className="w-48 rounded-md border border-[#D1D5DB] px-3 py-2 text-sm"
           />
         </div>
 
-        {/* Proveedor */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-[#374151]">
-            Proveedor
-          </label>
+          <label className="text-xs font-medium text-[#374151]">Proveedor</label>
           <input
             type="text"
             value={filters.vendor}
             onChange={(e) =>
               setFilters({ ...filters, vendor: e.target.value })
             }
-            placeholder="ID o nombre"
-            className="border border-[#D1D5DB] rounded-md px-3 py-2 text-sm w-48"
+            placeholder="Filtrar por proveedor"
+            className="w-48 rounded-md border border-[#D1D5DB] px-3 py-2 text-sm"
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-[#374151]">
-            Ordenar por
-          </label>
+          <label className="text-xs font-medium text-[#374151]">Ordenar por</label>
           <select
             value={ordering}
             onChange={(e) => setOrdering(e.target.value)}
-            className="border border-[#D1D5DB] rounded-md px-3 py-2 text-sm w-48"
+            className="w-48 rounded-md border border-[#D1D5DB] px-3 py-2 text-sm"
           >
             <option value="-created_at">Más recientes</option>
             <option value="created_at">Más antiguos</option>
-            <option value="name">Nombre A–Z</option>
-            <option value="-name">Nombre Z–A</option>
+            <option value="name">Nombre A-Z</option>
+            <option value="-name">Nombre Z-A</option>
             <option value="price">Precio menor</option>
             <option value="-price">Precio mayor</option>
           </select>
         </div>
 
-        {/* Acciones */}
         <div className="flex gap-2">
-
           <Button
-            type="button"   // 🔥 CLAVE
+            type="button"
             variant="outline"
             onClick={() => {
-              const reset = { search: "", category: "", vendor: "" };
-              setFilters(reset);
+              setFilters({ search: "", category: "", vendor: "" });
             }}
             className="text-sm"
           >
             Limpiar
           </Button>
+
+          {selectedProducts.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSelectedProductIds([])}
+              className="text-sm"
+            >
+              Limpiar selección
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* 🔬 TABLA CON LOADING INLINE */}
       <div className="relative">
         {loading && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 backdrop-blur-sm">
             <Loader2 className="h-6 w-6 animate-spin text-[#002366]" />
           </div>
         )}
 
         {paginatedProducts.length === 0 ? (
-          <div className="bg-white border border-[#E5E7EB] rounded-lg p-12 text-center">
-            <Package className="h-16 w-16 text-[#E5E7EB] mx-auto mb-4" />
-            <p className="text-sm text-[#6B7280] font-medium">
+          <div className="rounded-lg border border-[#E5E7EB] bg-white p-12 text-center">
+            <Package className="mx-auto mb-4 h-16 w-16 text-[#E5E7EB]" />
+            <p className="text-sm font-medium text-[#6B7280]">
               No hay productos registrados
             </p>
-            <p className="text-xs text-[#6B7280] mt-1">
+            <p className="mt-1 text-xs text-[#6B7280]">
               Crea uno para comenzar
             </p>
           </div>
@@ -422,7 +598,6 @@ export default function AdminProductsPage() {
         )}
       </div>
 
-      {/* 🔬 PAGINACIÓN */}
       {totalPages > 1 && (
         <Pagination
           page={page}
@@ -433,63 +608,71 @@ export default function AdminProductsPage() {
         />
       )}
 
-      {/* 🔬 MODALES (SOLO UNO ACTIVO) */}
-      {/* CREAR */}
       {modal.type === "create" && (
         <ProductForm
-          open={true}
+          open
           onClose={() => setModal({ type: null, data: null })}
           onSubmit={handleCreate}
         />
       )}
 
-      {/* EDITAR */}
       {modal.type === "edit" && (
         <ProductForm
-          open={true}
+          open
           initialData={modal.data}
           onClose={() => setModal({ type: null, data: null })}
           onSubmit={handleUpdate}
         />
       )}
 
-      {/* VER DETALLE */}
       {modal.type === "view" && (
         <ProductDetailModal
           productId={modal.data.id}
           onClose={() => setModal({ type: null, data: null })}
+          onSaved={async () => {
+            showFeedback("success", "Producto actualizado correctamente.");
+            await fetchProducts();
+          }}
         />
       )}
 
-      {/* ELIMINAR */}
       {modal.type === "delete" && (
         <ProductDeleteDialog
-          open={true}
+          open
           product={modal.data}
           onClose={() => setModal({ type: null, data: null })}
           onDeleted={handleDelete}
         />
       )}
 
+      {modal.type === "delete-multiple" && (
+        <ProductDeleteDialog
+          open
+          products={modal.data}
+          onClose={() => setModal({ type: null, data: null })}
+          onDeleted={handleBulkDelete}
+        />
+      )}
+
       {modal.type === "import" && (
         <ProductImportModal
-          open={true}
+          open
           onClose={() => setModal({ type: null, data: null })}
-          onSuccess={() => {
-            showSuccess("Importación completada correctamente");
-            fetchProducts();
+          onSuccess={async () => {
+            showFeedback("success", "Importación completada correctamente.");
+            await fetchProducts();
           }}
         />
       )}
 
       {modal.type === "export" && (
         <ProductExportModal
-          open={true}
+          open
           filters={debouncedFilters}
           ordering={ordering}
           onClose={() => setModal({ type: null, data: null })}
           onSuccess={(count) => {
-            showSuccess(`Exportación completada (${count} productos)`);
+            showFeedback("success", `Exportación completada (${count} productos).`);
           }}
         />
       )}

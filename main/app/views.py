@@ -109,6 +109,7 @@ class ProductViewSet(ReadOnlyModelViewSet):
         search = self.request.query_params.get("search")
         if search:
             queryset = queryset.filter(
+                Q(sku__icontains=search) |
                 Q(name__icontains=search) |
                 Q(description__icontains=search) |
                 Q(vendor__name__icontains=search)
@@ -136,6 +137,10 @@ class ProductViewSet(ReadOnlyModelViewSet):
 class ProductAdminViewSet(ModelViewSet):
     serializer_class = ProductAdminSerializer
     permission_classes = [IsStaff]
+    protected_delete_message = (
+        "No se puede eliminar este producto porque "
+        "está siendo utilizado en pedidos o carritos."
+    )
 
     def get_queryset(self):
         qs = Product.objects.select_related(
@@ -148,6 +153,7 @@ class ProductAdminViewSet(ModelViewSet):
         search = params.get("search")
         if search:
             qs = qs.filter(
+                Q(sku__icontains=search) |
                 Q(name__icontains=search) |
                 Q(description__icontains=search) |
                 Q(vendor__name__icontains=search)
@@ -214,6 +220,51 @@ class ProductAdminViewSet(ModelViewSet):
                     "está siendo utilizado en pedidos o carritos."
                 )
             })
+
+    @action(detail=False, methods=["post"], url_path="bulk-delete")
+    def bulk_delete(self, request):
+        ids = request.data.get("ids")
+
+        if not isinstance(ids, list) or not ids:
+            raise ValidationError({
+                "detail": "Debes enviar una lista de IDs para eliminar."
+            })
+
+        products = Product.objects.filter(id__in=ids)
+        products_by_id = {str(product.id): product for product in products}
+
+        deleted = 0
+        failed = []
+        missing = []
+
+        for raw_id in ids:
+            product_id = str(raw_id)
+            product = products_by_id.get(product_id)
+
+            if not product:
+                missing.append(product_id)
+                continue
+
+            try:
+                product.delete()
+                deleted += 1
+            except ProtectedError:
+                failed.append({
+                    "id": product_id,
+                    "name": product.name,
+                    "detail": self.protected_delete_message,
+                })
+
+        return Response({
+            "detail": (
+                "Eliminación masiva completada con observaciones."
+                if failed or missing
+                else "Productos eliminados correctamente."
+            ),
+            "deleted": deleted,
+            "failed": failed,
+            "missing": missing,
+        })
 
 # ======================
 # PRODUCT IMAGES (ADMIN)

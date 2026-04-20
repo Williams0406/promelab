@@ -174,6 +174,7 @@ class ProductAdminSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "sku",
             "slug",
             "description",
             "technical_specs",
@@ -190,6 +191,13 @@ class ProductAdminSerializer(serializers.ModelSerializer):
             "images",
         ]
         read_only_fields = ["slug"]
+
+    def validate_sku(self, value):
+        if value in [None, ""]:
+            return None
+
+        normalized = value.strip()
+        return normalized or None
 
 # ======================
 # CART

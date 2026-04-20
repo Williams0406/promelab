@@ -17,6 +17,7 @@ const IMPORT_TYPES = [
 const FIELD_OPTIONS = {
   product: [
     "name",
+    "sku",
     "description",
     "technical_specs",
     "price",

@@ -103,6 +103,7 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
 
   const [form, setForm] = useState({
     name: safeInitialData.name || "",
+    sku: safeInitialData.sku || "",
     description: safeInitialData.description || "",
     price: safeInitialData.price || "",
     category: safeInitialData.category || "",
@@ -154,6 +155,7 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
     const data = initialData || {};
     setForm({
       name: data.name || "",
+      sku: data.sku || "",
       description: data.description || "",
       price: data.price || "",
       category: data.category || "",
@@ -236,6 +238,7 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
     try {
       const submitData = {
         ...form,
+        sku: form.sku.trim() || null,
         category: form.category || null,
         vendor: form.vendor || null,
       };
@@ -295,6 +298,19 @@ export default function ProductForm({ open, onClose, initialData, onSubmit }) {
             {errors.name && (
               <p className="text-xs text-[#E5533D] mt-1.5">{errors.name}</p>
             )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#374151] mb-2">
+              SKU <span className="text-xs text-[#6B7280] font-normal">(opcional)</span>
+            </label>
+            <Input
+              name="sku"
+              value={form.sku}
+              onChange={handleChange}
+              placeholder="Ej. LAB-001"
+              className="h-10 border-[#E5E7EB] placeholder:text-[#9CA3AF]"
+            />
           </div>
         </div>
 

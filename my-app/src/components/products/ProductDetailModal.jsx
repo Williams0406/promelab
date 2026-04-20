@@ -182,6 +182,7 @@ export default function ProductDetailModal({ productId, onClose, onSaved }) {
     try {
       await adminAPI.updateProduct(product.id, {
         name: product.name,
+        sku: product.sku?.trim() || null,
         description: product.description,
         price: product.price,
         promo_price: product.promo_price || null,
@@ -278,19 +279,36 @@ export default function ProductDetailModal({ productId, onClose, onSaved }) {
           <div className="space-y-5 lg:col-span-2">
             
             {/* Nombre */}
-            <div>
-              <label className="block text-sm font-medium text-[#374151] mb-2">
-                Nombre del producto
-              </label>
-              <Input
-                placeholder="Nombre del producto"
-                value={product.name}
-                disabled={!editing}
-                onChange={(e) =>
-                  setProduct({ ...product, name: e.target.value })
-                }
-                className="h-10 border-[#E5E7EB]"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[#374151] mb-2">
+                  Nombre del producto
+                </label>
+                <Input
+                  placeholder="Nombre del producto"
+                  value={product.name}
+                  disabled={!editing}
+                  onChange={(e) =>
+                    setProduct({ ...product, name: e.target.value })
+                  }
+                  className="h-10 border-[#E5E7EB]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#374151] mb-2">
+                  SKU
+                </label>
+                <Input
+                  placeholder="Ej. LAB-001"
+                  value={product.sku || ""}
+                  disabled={!editing}
+                  onChange={(e) =>
+                    setProduct({ ...product, sku: e.target.value })
+                  }
+                  className="h-10 border-[#E5E7EB]"
+                />
+              </div>
             </div>
 
             {/* Descripción */}

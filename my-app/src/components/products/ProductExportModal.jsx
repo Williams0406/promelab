@@ -35,6 +35,7 @@ function normalizeText(value) {
 function toExportRows(products) {
   return products.map((product) => ({
     ID: product.id,
+    SKU: product.sku || "",
     Nombre: product.name || "",
     Descripción: product.description || "",
     Precio: product.price ?? "",
@@ -89,6 +90,7 @@ export default function ProductExportModal({
       const categoryFilter = normalizeText(filters.category);
       const vendorFilter = normalizeText(filters.vendor);
       const filteredProducts = products.filter((product) => {
+        const sku = normalizeText(product.sku);
         const name = normalizeText(product.name);
         const description = normalizeText(product.description);
         const categoryName = normalizeText(product.category_name);
@@ -96,6 +98,7 @@ export default function ProductExportModal({
 
         const searchMatch =
           !searchFilter ||
+          sku.includes(searchFilter) ||
           name.includes(searchFilter) ||
           description.includes(searchFilter);
         const categoryMatch =
