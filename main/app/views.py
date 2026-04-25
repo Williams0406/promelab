@@ -3,7 +3,7 @@ import os
 from rest_framework.viewsets import ReadOnlyModelViewSet, ModelViewSet
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -37,6 +37,12 @@ from .serializers import (
     ContentBlockSerializer, ClientRegisterSerializer, AddToCartSerializer, CartItemSerializer,
     StaffCreateSerializer, ProductImageCreateSerializer, BannerCreateUpdateSerializer,
     CartAdminSerializer, CategoryPublicTreeSerializer
+)
+from .auth_utils import (
+    find_user_by_email,
+    get_or_create_google_user,
+    merge_session_cart_to_user,
+    verify_google_credential,
 )
 from .permissions import IsAdmin, IsStaff, IsStaffOrReadOnly, IsClient
 
@@ -432,41 +438,37 @@ class ContentBlockViewSet(ReadOnlyModelViewSet):
 # AUTH JWT
 # ======================
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    identifier = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        username_field = self.username_field
+
+        if username_field in self.fields:
+            self.fields[username_field].required = False
+            self.fields[username_field].allow_blank = True
+
     def validate(self, attrs):
+        identifier = (
+            attrs.get("identifier")
+            or attrs.get(self.username_field)
+            or self.initial_data.get("email")
+            or ""
+        )
+        identifier = identifier.strip()
+
+        if identifier and "@" in identifier:
+            user = find_user_by_email(identifier)
+
+            if user:
+                attrs[self.username_field] = getattr(user, self.username_field)
+        elif identifier:
+            attrs[self.username_field] = identifier
+        else:
+            attrs[self.username_field] = ""
+
         data = super().validate(attrs)
-
-        request = self.context.get("request")
-
-        if request:
-            # 🔥 Asegurar que exista sesión
-            if not request.session.session_key:
-                request.session.create()
-
-            session_key = request.session.session_key
-
-            session_cart = Cart.objects.filter(
-                session_key=session_key,
-                user__isnull=True
-            ).first()
-
-            if session_cart:
-                user_cart, _ = Cart.objects.get_or_create(user=self.user)
-
-                for item in session_cart.cartitem_set.all():
-                    existing = CartItem.objects.filter(
-                        cart=user_cart,
-                        product=item.product
-                    ).first()
-
-                    if existing:
-                        existing.quantity += item.quantity
-                        existing.save()
-                    else:
-                        item.cart = user_cart
-                        item.save()
-
-                session_cart.delete()
-
+        merge_session_cart_to_user(self.context.get("request"), self.user)
         data["user"] = UserSerializer(self.user).data
         return data
 
@@ -489,6 +491,35 @@ class LogoutView(APIView):
 class ClientRegisterView(CreateAPIView):
     serializer_class = ClientRegisterSerializer
     permission_classes = [AllowAny]
+
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({"user": UserSerializer(request.user).data})
+
+
+class GoogleAuthView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        payload = verify_google_credential(request.data.get("credential"))
+        user, is_new_user = get_or_create_google_user(payload)
+
+        merge_session_cart_to_user(request, user)
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response(
+            {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user": UserSerializer(user).data,
+                "is_new_user": is_new_user,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 class CartItemViewSet(ModelViewSet):
     serializer_class = CartItemSerializer

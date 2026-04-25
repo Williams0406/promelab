@@ -47,10 +47,10 @@ export default function ContactPage() {
                       Teléfono directo
                     </p>
                     <a
-                      href="tel:+51962162027"
+                      href="tel:+51972171964"
                       className="text-[#374151] hover:text-[#00A8CC] transition-colors duration-150"
                     >
-                      +51 962 162 027
+                      +51 972 719 164
                     </a>
                   </div>
                 </div>
@@ -83,7 +83,7 @@ export default function ContactPage() {
                       WhatsApp Business
                     </p>
                     <a
-                      href="https://wa.me/51962162027"
+                      href="https://wa.me/51972719164"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#374151] hover:text-[#2ECC71] transition-colors duration-150"
@@ -169,7 +169,7 @@ export default function ContactPage() {
               </p>
 
               <Link
-                href="https://wa.me/51962162027"
+                href="https://wa.me/51972719164"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-[#002366] text-white text-sm font-medium rounded-lg hover:bg-[#003380] transition-colors duration-150"

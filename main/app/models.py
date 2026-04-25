@@ -7,6 +7,13 @@ from django.utils.text import slugify
 
 class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    google_sub = models.CharField(
+        max_length=255,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
 
     class Role(models.TextChoices):
         ADMIN = "ADMIN", "Administrador"

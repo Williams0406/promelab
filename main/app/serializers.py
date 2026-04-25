@@ -7,6 +7,7 @@ from .models import (
     Order, OrderItem,
     Address, Banner, ContentBlock
 )
+from .auth_utils import build_unique_username
 from django.contrib.auth.password_validation import validate_password
 
 User = get_user_model()
@@ -291,6 +292,7 @@ class OrderAdminSerializer(serializers.ModelSerializer):
         ]
 
 class ClientRegisterSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(required=False, allow_blank=True)
     password = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
 
@@ -312,12 +314,26 @@ class ClientRegisterSerializer(serializers.ModelSerializer):
         validate_password(attrs["password"])
         return attrs
 
+    def validate_email(self, value):
+        normalized_email = value.strip().lower()
+
+        if not normalized_email:
+            raise serializers.ValidationError("El email es obligatorio")
+
+        if User.objects.filter(email__iexact=normalized_email).exists():
+            raise serializers.ValidationError("Ya existe una cuenta con este correo")
+
+        return normalized_email
+
     def create(self, validated_data):
         validated_data.pop("password2")
 
+        username = validated_data.get("username", "").strip()
+        email = validated_data.get("email", "").strip().lower()
+
         user = User.objects.create_user(
-            username=validated_data["username"],
-            email=validated_data.get("email"),
+            username=username or build_unique_username(email=email),
+            email=email,
             password=validated_data["password"],
             first_name=validated_data.get("first_name", ""),
             last_name=validated_data.get("last_name", ""),
@@ -345,6 +361,14 @@ class StaffCreateSerializer(serializers.ModelSerializer):
             "last_name",
             "phone",
         ]
+
+    def validate_email(self, value):
+        normalized_email = value.strip().lower()
+
+        if User.objects.filter(email__iexact=normalized_email).exists():
+            raise serializers.ValidationError("Ya existe una cuenta con este correo")
+
+        return normalized_email
 
     def create(self, validated_data):
         password = validated_data.pop("password")

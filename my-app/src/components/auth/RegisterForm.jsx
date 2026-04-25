@@ -1,63 +1,68 @@
 "use client";
 
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { authAPI } from "@/lib/api";
+import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2, UserPlus } from "lucide-react";
 
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
+import { useAuth } from "@/hooks/useAuth";
+import { authAPI } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
 export default function RegisterForm({ onSwitch }) {
+  const router = useRouter();
+  const { loginWithGoogle } = useAuth();
+
   const [form, setForm] = useState({
-    username: "",
     email: "",
     password: "",
     password2: "",
   });
-
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    
-    // Limpiar error del campo
+  const isBusy = loading || googleLoading || success;
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
+      setErrors((current) => ({ ...current, [name]: null }));
     }
 
-    setForm({ ...form, [name]: value });
+    setForm((current) => ({ ...current, [name]: value }));
   };
 
   const validateForm = () => {
-    const newErrors = {};
-
-    if (!form.username.trim()) {
-      newErrors.username = "El usuario es obligatorio";
-    }
+    const nextErrors = {};
 
     if (!form.email.trim()) {
-      newErrors.email = "El email es obligatorio";
+      nextErrors.email = "El email es obligatorio";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = "Email inválido";
+      nextErrors.email = "Email invalido";
     }
 
     if (!form.password || form.password.length < 8) {
-      newErrors.password = "La contraseña debe tener al menos 8 caracteres";
+      nextErrors.password = "La contrasena debe tener al menos 8 caracteres";
     }
 
     if (form.password !== form.password2) {
-      newErrors.password2 = "Las contraseñas no coinciden";
+      nextErrors.password2 = "Las contrasenas no coinciden";
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     setLoading(true);
 
@@ -68,12 +73,13 @@ export default function RegisterForm({ onSwitch }) {
       setTimeout(() => {
         onSwitch?.();
       }, 1500);
-    } catch (err) {
-      const data = err.response?.data;
+    } catch (error) {
+      const data = error.response?.data;
+
       if (data) {
         const firstError = Object.values(data)[0];
-        setErrors({ 
-          submit: Array.isArray(firstError) ? firstError[0] : firstError 
+        setErrors({
+          submit: Array.isArray(firstError) ? firstError[0] : firstError,
         });
       } else {
         setErrors({ submit: "No se pudo crear la cuenta" });
@@ -83,63 +89,80 @@ export default function RegisterForm({ onSwitch }) {
     }
   };
 
+  const handleGoogleAuth = useCallback(
+    async (credential) => {
+      setErrors({});
+      setGoogleLoading(true);
+
+      const result = await loginWithGoogle(credential);
+
+      if (!result?.success) {
+        setErrors({
+          submit: result?.message || "No pudimos continuar con Google",
+        });
+        setGoogleLoading(false);
+        return;
+      }
+
+      router.push("/");
+    },
+    [loginWithGoogle, router]
+  );
+
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="mx-auto w-full max-w-md">
       <div className="space-y-6 rounded-lg border border-[#E5E7EB] bg-white p-8 shadow-sm">
-        
-        {/* Header */}
-        <div className="text-center space-y-3">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F5F7FA] border border-[#E5E7EB]">
+        <div className="space-y-3 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#E5E7EB] bg-[#F5F7FA]">
             <UserPlus className="h-5 w-5 text-[#002366]" />
           </div>
-          
+
           <div>
-            <h1 className="text-xl font-semibold text-[#002366] tracking-tight">
+            <h1 className="text-xl font-semibold tracking-tight text-[#002366]">
               Crear cuenta
             </h1>
-            <p className="text-sm text-[#6B7280] mt-1">
-              Regístrate para acceder a la plataforma
+            <p className="mt-1 text-sm text-[#6B7280]">
+              Registrate con Google o con tu correo
             </p>
           </div>
         </div>
 
-        {/* Success feedback */}
         {success && (
-          <div className="rounded-lg bg-[#E6F4F1] border border-[#2ECC71] p-4">
-            <p className="text-sm text-[#0F766E] font-medium">
+          <div className="rounded-lg border border-[#2ECC71] bg-[#E6F4F1] p-4">
+            <p className="text-sm font-medium text-[#0F766E]">
               Cuenta creada correctamente. Redirigiendo...
             </p>
           </div>
         )}
 
-        {/* Error feedback */}
         {errors.submit && (
-          <div className="rounded-lg bg-[#FEF2F2] border border-[#E5533D] p-4">
+          <div className="rounded-lg border border-[#E5533D] bg-[#FEF2F2] p-4">
             <p className="text-sm text-[#E5533D]">{errors.submit}</p>
           </div>
         )}
 
-        {/* Form */}
-        <div className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-[#374151] mb-2">
-              Usuario
-            </label>
-            <Input
-              name="username"
-              placeholder="Nombre de usuario"
-              value={form.username}
-              onChange={handleChange}
-              className={`h-10 placeholder:text-[#9CA3AF] ${errors.username ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
-              disabled={loading || success}
-            />
-            {errors.username && (
-              <p className="text-xs text-[#E5533D] mt-1.5">{errors.username}</p>
-            )}
-          </div>
+        <div className="space-y-4">
+          <GoogleAuthButton
+            mode="register"
+            onCredential={handleGoogleAuth}
+            disabled={isBusy}
+          />
 
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[#E5E7EB]" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-3 text-[11px] font-medium uppercase tracking-[0.16em] text-[#9CA3AF]">
+                o con tu correo
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-2">
+            <label className="mb-2 block text-sm font-medium text-[#374151]">
               Email
             </label>
             <Input
@@ -148,70 +171,79 @@ export default function RegisterForm({ onSwitch }) {
               placeholder="correo@ejemplo.com"
               value={form.email}
               onChange={handleChange}
-              className={`h-10 placeholder:text-[#9CA3AF] ${errors.email ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
-              disabled={loading || success}
+              className={`h-10 placeholder:text-[#9CA3AF] ${
+                errors.email ? "border-[#E5533D]" : "border-[#E5E7EB]"
+              }`}
+              disabled={isBusy}
             />
             {errors.email && (
-              <p className="text-xs text-[#E5533D] mt-1.5">{errors.email}</p>
+              <p className="mt-1.5 text-xs text-[#E5533D]">{errors.email}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-2">
-              Contraseña
+            <label className="mb-2 block text-sm font-medium text-[#374151]">
+              Contrasena
             </label>
             <Input
               name="password"
               type="password"
-              placeholder="Mínimo 8 caracteres"
+              placeholder="Minimo 8 caracteres"
               value={form.password}
               onChange={handleChange}
-              className={`h-10 placeholder:text-[#9CA3AF] ${errors.password ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
-              disabled={loading || success}
+              className={`h-10 placeholder:text-[#9CA3AF] ${
+                errors.password ? "border-[#E5533D]" : "border-[#E5E7EB]"
+              }`}
+              disabled={isBusy}
             />
             {errors.password && (
-              <p className="text-xs text-[#E5533D] mt-1.5">{errors.password}</p>
+              <p className="mt-1.5 text-xs text-[#E5533D]">
+                {errors.password}
+              </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#374151] mb-2">
-              Confirmar contraseña
+            <label className="mb-2 block text-sm font-medium text-[#374151]">
+              Confirmar contrasena
             </label>
             <Input
               name="password2"
               type="password"
-              placeholder="Repite tu contraseña"
+              placeholder="Repite tu contrasena"
               value={form.password2}
               onChange={handleChange}
-              className={`h-10 placeholder:text-[#9CA3AF] ${errors.password2 ? "border-[#E5533D]" : "border-[#E5E7EB]"}`}
-              disabled={loading || success}
+              className={`h-10 placeholder:text-[#9CA3AF] ${
+                errors.password2 ? "border-[#E5533D]" : "border-[#E5E7EB]"
+              }`}
+              disabled={isBusy}
             />
             {errors.password2 && (
-              <p className="text-xs text-[#E5533D] mt-1.5">{errors.password2}</p>
+              <p className="mt-1.5 text-xs text-[#E5533D]">
+                {errors.password2}
+              </p>
             )}
           </div>
 
-          <Button 
-            onClick={handleSubmit}
-            className="w-full h-11 bg-[#002366] text-white hover:bg-[#003380] transition-colors duration-150" 
-            disabled={loading || success}
+          <Button
+            type="submit"
+            className="h-11 w-full bg-[#002366] text-white transition-colors duration-150 hover:bg-[#003380]"
+            disabled={isBusy}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {loading ? "Creando cuenta..." : "Crear cuenta"}
           </Button>
-        </div>
+        </form>
 
-        {/* Switch link */}
-        <div className="pt-4 border-t border-[#E5E7EB]">
+        <div className="border-t border-[#E5E7EB] pt-4">
           <p className="text-center text-sm text-[#6B7280]">
-            ¿Ya tienes cuenta?{" "}
+            Ya tienes cuenta?{" "}
             <button
               type="button"
               onClick={onSwitch}
-              className="font-medium text-[#002366] hover:text-[#00A8CC] transition-colors duration-150"
+              className="font-medium text-[#002366] transition-colors duration-150 hover:text-[#00A8CC]"
             >
-              Inicia sesión
+              Inicia sesion
             </button>
           </p>
         </div>

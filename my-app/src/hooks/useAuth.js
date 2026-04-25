@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { authAPI } from "@/lib/api";
-import { getUser, setUser, clearTokens, isAuthenticated, getUserRole, getAccessToken } from "@/lib/auth";
+import { getUser, setUser, clearTokens, getUserRole, getAccessToken } from "@/lib/auth";
 
 const AuthContext = createContext(null);
 
@@ -44,10 +44,10 @@ export function AuthProvider({ children }) {
   // -----------------------------
   // Login
   // -----------------------------
-  const login = async (username, password) => {
+  const login = async (identifier, password) => {
     setLoading(true);
     try {
-      const data = await authAPI.login(username, password);
+      const data = await authAPI.login(identifier, password);
 
       if (data?.user) {
         setUser(data.user);
@@ -60,6 +60,32 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error("Login error:", error);
       return { success: false, message: "Credenciales inválidas" };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async (credential) => {
+    setLoading(true);
+    try {
+      const data = await authAPI.googleAuth(credential);
+
+      if (data?.user) {
+        setUser(data.user);
+        setUserState(data.user);
+      }
+
+      document.cookie = `access_token=${data.access}; path=/;`;
+
+      return { success: true, isNewUser: !!data?.is_new_user };
+    } catch (error) {
+      console.error("Google login error:", error);
+      return {
+        success: false,
+        message:
+          error?.response?.data?.detail ||
+          "No se pudo continuar con Google",
+      };
     } finally {
       setLoading(false);
     }
@@ -98,6 +124,7 @@ export function AuthProvider({ children }) {
       isStaff,
       isClient,
       login,
+      loginWithGoogle,
       logout
     }}>
       {children}

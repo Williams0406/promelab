@@ -79,8 +79,15 @@ api.interceptors.response.use(
  * ============================
  */
 export const authAPI = {
-  login: async (username, password) => {
-    const res = await api.post("/auth/login/", { username, password });
+  login: async (identifier, password) => {
+    const res = await api.post("/auth/login/", { identifier, password });
+    setTokens(res.data);
+    if (res.data.user) setUser(res.data.user);
+    return res.data;
+  },
+
+  googleAuth: async (credential) => {
+    const res = await api.post("/auth/google/", { credential });
     setTokens(res.data);
     if (res.data.user) setUser(res.data.user);
     return res.data;

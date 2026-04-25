@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import useCart from "@/hooks/useCart";
 import { Trash2, Minus, Plus } from "lucide-react";
@@ -10,15 +9,11 @@ import ConfirmDialog from "@/components/common/ConfirmDialog";
 export default function CartItem({ item }) {
   const { updateQuantity, removeItem } = useCart();
   const { product } = item;
-  
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleQuantityChange = (newQuantity) => {
     if (newQuantity < 1) return;
-    if (newQuantity > product.stock) {
-      alert(`Stock máximo disponible: ${product.stock}`);
-      return;
-    }
     updateQuantity(item.id, newQuantity);
   };
 
@@ -62,11 +57,9 @@ export default function CartItem({ item }) {
           <p className="text-sm text-[#6B7280]">
             Precio unitario: S/ {price}
           </p>
-          {product.stock <= 10 && (
-            <p className="text-xs text-[#F59E0B] mt-1">
-              Solo {product.stock} disponibles
-            </p>
-          )}
+          <p className="mt-1 text-xs text-[#00A8CC]">
+            Cantidad editable segun tu pedido
+          </p>
         </div>
 
         {/* Controles de cantidad */}
@@ -83,7 +76,6 @@ export default function CartItem({ item }) {
           <Input
             type="number"
             min={1}
-            max={product.stock}
             value={item.quantity}
             onChange={(e) => handleQuantityChange(Number(e.target.value))}
             className="h-8 w-16 text-center text-sm border-[#E5E7EB]"
@@ -91,7 +83,6 @@ export default function CartItem({ item }) {
 
           <button
             onClick={() => handleQuantityChange(item.quantity + 1)}
-            disabled={item.quantity >= product.stock}
             className="flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E7EB] text-[#374151] hover:bg-[#F5F7FA] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150"
             aria-label="Aumentar cantidad"
           >

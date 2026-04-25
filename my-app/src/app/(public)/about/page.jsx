@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle, FileText, Users, TrendingUp } from "lucide-react";
+import Image from "next/image";
+import { CheckCircle } from "lucide-react";
 
 export default function AboutPage() {
   return (
@@ -127,55 +128,56 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* 🔬 ÁREAS DE ESPECIALIZACIÓN */}
-      <section className="py-16 bg-[#F5F7FA] border-y border-[#E5E7EB]">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <h2 className="text-2xl font-semibold text-[#002366] mb-8 tracking-tight">
-            Áreas de especialización técnica
+      {/* 🔬 CERTIFICACIONES */}
+      <section className="py-20 bg-transparent border-y border-[#E5E7EB]">
+        <div className="container mx-auto px-4 max-w-4xl text-center">
+
+          {/* TÍTULO */}
+          <h2 className="text-2xl md:text-3xl font-semibold text-[#002366] mb-4 tracking-tight">
+            Certificaciones y cumplimiento técnico
           </h2>
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {/* Área 1 */}
-            <div className="bg-white border border-[#E5E7EB] rounded-lg p-6">
-              <div className="w-10 h-10 rounded-lg bg-[#002366]/5 flex items-center justify-center mb-4">
-                <FileText className="h-5 w-5 text-[#002366]" />
-              </div>
-              <h3 className="text-base font-semibold text-[#002366] mb-2">
-                Análisis y control de calidad
-              </h3>
-              <p className="text-sm text-[#6B7280] leading-relaxed">
-                Espectrofotómetros, cromatógrafos, balanzas analíticas, sistemas
-                de purificación de agua, equipos de análisis físico-químico.
+          <p className="text-[#6B7280] max-w-2xl mx-auto mb-12 text-sm md:text-base">
+            Operamos bajo estándares reconocidos que garantizan calidad, seguridad y trazabilidad en cada proceso.
+          </p>
+
+          {/* GRID */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 items-start justify-center">
+
+            {/* BPA */}
+            <div className="flex flex-col items-center text-center">
+              <img
+                src="/logo_bpa.png"
+                alt="BPA"
+                className="w-28 h-28 md:w-36 md:h-36 object-contain mb-4"
+              />
+
+              <p className="text-sm font-medium text-[#002366]">
+                Buenas Prácticas de Almacenamiento
+              </p>
+
+              <p className="text-xs text-[#6B7280] mt-1 max-w-[220px]">
+                Garantiza condiciones óptimas de conservación, control y trazabilidad de productos.
               </p>
             </div>
 
-            {/* Área 2 */}
-            <div className="bg-white border border-[#E5E7EB] rounded-lg p-6">
-              <div className="w-10 h-10 rounded-lg bg-[#002366]/5 flex items-center justify-center mb-4">
-                <Users className="h-5 w-5 text-[#002366]" />
-              </div>
-              <h3 className="text-base font-semibold text-[#002366] mb-2">
-                Laboratorio clínico y diagnóstico
-              </h3>
-              <p className="text-sm text-[#6B7280] leading-relaxed">
-                Analizadores clínicos, equipos de hematología, sistemas de
-                inmunología, centrífugas, micropipetas calibradas.
+            {/* BPDT */}
+            <div className="flex flex-col items-center text-center">
+              <img
+                src="/logo_bpdt.png"
+                alt="BPDT"
+                className="w-28 h-28 md:w-36 md:h-36 object-contain mb-4"
+              />
+
+              <p className="text-sm font-medium text-[#002366]">
+                Buenas Prácticas de Distribución y Transporte
+              </p>
+
+              <p className="text-xs text-[#6B7280] mt-1 max-w-[220px]">
+                Asegura integridad, seguridad y control durante toda la cadena logística.
               </p>
             </div>
 
-            {/* Área 3 */}
-            <div className="bg-white border border-[#E5E7EB] rounded-lg p-6">
-              <div className="w-10 h-10 rounded-lg bg-[#002366]/5 flex items-center justify-center mb-4">
-                <TrendingUp className="h-5 w-5 text-[#002366]" />
-              </div>
-              <h3 className="text-base font-semibold text-[#002366] mb-2">
-                Investigación y desarrollo
-              </h3>
-              <p className="text-sm text-[#6B7280] leading-relaxed">
-                Equipos de biología molecular, cabinas de flujo laminar, sistemas
-                de electroforesis, incubadoras, reactivos especializados.
-              </p>
-            </div>
           </div>
         </div>
       </section>

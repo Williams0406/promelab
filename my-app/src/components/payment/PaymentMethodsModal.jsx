@@ -22,7 +22,7 @@ export default function PaymentMethodsModal({ open, onClose, items, total }) {
   const [showBank, setShowBank] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const phone = "51962162027";
+  const phone = "51972719164";
 
   const message = encodeURIComponent(
     `Hola, deseo realizar una compra con el siguiente detalle:\n\n` +

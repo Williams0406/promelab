@@ -10,7 +10,7 @@ export default function Footer() {
       <div className="container-promelab py-14">
         
         {/* GRID HORIZONTAL */}
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-5">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
 
           {/* PROMELAB */}
           <div>
@@ -31,8 +31,6 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-[#6B7280]">
               <li><Link href="/about">Nosotros</Link></li>
               <li><Link href="/contact">Contacto</Link></li>
-              <li><Link href="/">Certificaciones</Link></li>
-              <li><Link href="/">Carreras</Link></li>
             </ul>
           </div>
 
@@ -43,21 +41,6 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2 text-sm text-[#6B7280]">
               <li><Link href="/help">Centro de ayuda</Link></li>
-              <li><Link href="/">Envíos</Link></li>
-              <li><Link href="/">Devoluciones</Link></li>
-              <li><Link href="/">Documentación</Link></li>
-            </ul>
-          </div>
-
-          {/* SERVICIOS */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold text-[#374151]">
-              Servicios
-            </h3>
-            <ul className="space-y-2 text-sm text-[#6B7280]">
-              <li><Link href="/">Cotización</Link></li>
-              <li><Link href="/">Órdenes al por mayor</Link></li>
-              <li><Link href="/">Calibración</Link></li>
             </ul>
           </div>
 
