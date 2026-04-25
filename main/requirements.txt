@@ -11,6 +11,7 @@ drf-nested-routers
 whitenoise
 gunicorn
 dj-database-url
+python-dotenv
 django-cloudinary-storage
 cloudinary
 mercadopago

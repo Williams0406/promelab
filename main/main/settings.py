@@ -4,7 +4,12 @@ from importlib.util import find_spec
 from pathlib import Path
 
 import dj_database_url
-from dotenv import load_dotenv
+
+try:
+    from dotenv import load_dotenv
+except ImportError:  # Railway no necesita python-dotenv si usa variables del panel.
+    def load_dotenv(*args, **kwargs):
+        return False
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
