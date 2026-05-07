@@ -13,6 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.text import slugify
 from django.db.models import Count, Sum, Q
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 from django.utils import timezone
 from rest_framework.generics import CreateAPIView
 from django.contrib.auth import get_user_model
@@ -48,6 +49,10 @@ from .permissions import IsAdmin, IsStaff, IsStaffOrReadOnly, IsClient
 
 
 User = get_user_model()
+
+
+class PublicProductPagination(PageNumberPagination):
+    page_size = 12
 
 # ======================
 # CATEGORY
@@ -107,6 +112,7 @@ class ProductViewSet(ReadOnlyModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
     lookup_field = "slug"
+    pagination_class = PublicProductPagination
 
     def get_queryset(self):
         queryset = Product.objects.filter(is_active=True)
@@ -133,7 +139,7 @@ class ProductViewSet(ReadOnlyModelViewSet):
             except Category.DoesNotExist:
                 queryset = queryset.none()
 
-        return queryset
+        return queryset.order_by("-created_at")
 
     def get_serializer_context(self):
         return {"request": self.request}

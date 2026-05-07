@@ -75,9 +75,21 @@ class AdminImportView(APIView):
 
     @transaction.atomic
     def import_products(self, df, mapping, user):
+        sku_column = mapping.get("sku")
+        if not sku_column or not str(sku_column).strip():
+            return Response(
+                {
+                    "detail": (
+                        "Debe mapear el campo 'sku' para crear o actualizar "
+                        "productos."
+                    )
+                },
+                status=400
+            )
 
         created = 0
         updated = 0
+        skipped = 0
 
         for _, row in df.iterrows():
 
@@ -104,11 +116,12 @@ class AdminImportView(APIView):
                 value = row[real_column]
                 return None if pd.isna(value) else str(value).strip()
 
-            name = get_value("name")
-            if not name:
+            sku = get_value("sku")
+            if not sku:
+                skipped += 1
                 continue
 
-            sku = get_value("sku")
+            name = get_value("name")
 
             # ------------------
             # Relaciones por NAME
@@ -129,10 +142,13 @@ class AdminImportView(APIView):
                     name=vendor_name
                 )
 
-            product_data = {"name": name}
+            product_data = {}
+
+            if has_mapping("name") and name:
+                product_data["name"] = name
 
             if has_mapping("sku"):
-                product_data["sku"] = sku or None
+                product_data["sku"] = sku
 
             if has_mapping("description"):
                 product_data["description"] = get_value("description") or ""
@@ -155,12 +171,7 @@ class AdminImportView(APIView):
             if has_mapping("vendor"):
                 product_data["vendor"] = vendor
 
-            product = None
-            if sku:
-                product = Product.objects.filter(sku=sku).first()
-
-            if not product:
-                product = Product.objects.filter(name=name).first()
+            product = Product.objects.filter(sku=sku).first()
 
             if product:
                 for key, value in product_data.items():
@@ -168,7 +179,12 @@ class AdminImportView(APIView):
                 product.save()
                 updated += 1
             else:
+                if not name:
+                    skipped += 1
+                    continue
+
                 create_data = {
+                    "name": name,
                     "description": "",
                     "price": Decimal("0"),
                     "promo_price": None,
@@ -187,7 +203,10 @@ class AdminImportView(APIView):
         return Response({
             "detail": "Importación completada",
             "created": created,
-            "updated": updated
+            "updated": updated,
+            "skipped": skipped,
+            "reference_field": "sku",
+            "reference_label": "SKU",
         })
 
     # ====================================================

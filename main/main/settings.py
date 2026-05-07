@@ -187,11 +187,37 @@ SIMPLE_JWT = {
 }
 
 
-CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", default=True)
+cors_allowed_origins = env_list("CORS_ALLOWED_ORIGINS")
+
+if cors_allowed_origins:
+    CORS_ALLOWED_ORIGINS = cors_allowed_origins
+    CORS_ALLOW_ALL_ORIGINS = False
+else:
+    CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", default=True)
+
 CORS_ALLOW_CREDENTIALS = env_bool("CORS_ALLOW_CREDENTIALS", default=True)
 
-SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
-SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", default=False)
+# El carrito invitado depende de la sesion de Django; en Railway la cookie
+# debe viajar entre frontend y API incluso si estan en dominios distintos.
+default_session_cookie_samesite = "None" if IS_RAILWAY else "Lax"
+default_session_cookie_secure = IS_RAILWAY
+
+SESSION_COOKIE_SAMESITE = os.getenv(
+    "SESSION_COOKIE_SAMESITE",
+    default_session_cookie_samesite,
+)
+SESSION_COOKIE_SECURE = env_bool(
+    "SESSION_COOKIE_SECURE",
+    default=default_session_cookie_secure,
+)
+CSRF_COOKIE_SAMESITE = os.getenv(
+    "CSRF_COOKIE_SAMESITE",
+    SESSION_COOKIE_SAMESITE,
+)
+CSRF_COOKIE_SECURE = env_bool(
+    "CSRF_COOKIE_SECURE",
+    default=SESSION_COOKIE_SECURE,
+)
 
 csrf_trusted_origins = env_list("CSRF_TRUSTED_ORIGINS")
 if csrf_trusted_origins:

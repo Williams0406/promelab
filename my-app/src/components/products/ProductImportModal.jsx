@@ -1,16 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import * as XLSX from "xlsx";
+import { Loader2, Upload } from "lucide-react";
+
 import { adminAPI } from "@/lib/api";
+import Modal from "@/components/ui/Modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Modal from "@/components/ui/Modal";
-import { Loader2, Upload } from "lucide-react";
-import * as XLSX from "xlsx";
 
 const IMPORT_TYPES = [
   { value: "product", label: "Productos" },
-  { value: "category", label: "Categorías" },
+  { value: "category", label: "Categorias" },
   { value: "vendor", label: "Proveedores" },
 ];
 
@@ -26,12 +27,28 @@ const FIELD_OPTIONS = {
     "vendor",
   ],
   category: ["name"],
-  vendor: [
-    "name",
-    "contact_email",
-    "phone",
-    "is_active",
-    ],
+  vendor: ["name", "contact_email", "phone", "is_active"],
+};
+
+const REFERENCE_CONFIG = {
+  product: {
+    field: "sku",
+    label: "SKU",
+    description:
+      "Si un producto ya existe con ese SKU, se actualiza. Si no existe, se crea uno nuevo.",
+  },
+  category: {
+    field: "name",
+    label: "Nombre",
+    description:
+      "Las categorias se identifican por nombre para evitar duplicados al importar.",
+  },
+  vendor: {
+    field: "name",
+    label: "Nombre",
+    description:
+      "Los proveedores se identifican por nombre para crear o actualizar registros.",
+  },
 };
 
 export default function ProductImportModal({ open, onClose, onSuccess }) {
@@ -45,17 +62,30 @@ export default function ProductImportModal({ open, onClose, onSuccess }) {
   const [result, setResult] = useState(null);
 
   const fields = FIELD_OPTIONS[model];
+  const referenceInfo = REFERENCE_CONFIG[model];
+  const referenceColumn = (mapping[referenceInfo.field] || "").trim();
+  const isReferenceMapped = Boolean(referenceColumn);
 
   const mappedCount = useMemo(
     () => Object.values(mapping).filter(Boolean).length,
     [mapping]
   );
 
-  // ===============================
-  // Leer archivo
-  // ===============================
+  const canImport = Boolean(file) && mappedCount > 0 && isReferenceMapped && !loading;
+
+  function resetFlow(nextModel = model) {
+    setModel(nextModel);
+    setFile(null);
+    setColumns([]);
+    setMapping({});
+    setStep(1);
+    setLoading(false);
+    setError("");
+    setResult(null);
+  }
+
   async function handleFileChange(e) {
-    const selected = e.target.files[0];
+    const selected = e.target.files?.[0];
     if (!selected) return;
 
     setFile(selected);
@@ -65,9 +95,9 @@ export default function ProductImportModal({ open, onClose, onSuccess }) {
     try {
       if (selected.name.endsWith(".csv")) {
         const text = await selected.text();
-        const header = text.split("\n")[0];
-        const cols = header.split(",").map((c) => c.trim());
-        setColumns(cols);
+        const header = text.split("\n")[0] || "";
+        const cols = header.split(",").map((column) => column.trim());
+        setColumns(cols.filter(Boolean));
       } else {
         const buffer = await selected.arrayBuffer();
         const workbook = XLSX.read(buffer, { type: "array" });
@@ -75,14 +105,16 @@ export default function ProductImportModal({ open, onClose, onSuccess }) {
         const worksheet = workbook.Sheets[sheet];
         const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
         const header = rows[0] || [];
-        setColumns(header.map((c) => String(c).trim()));
+        setColumns(
+          header.map((column) => String(column).trim()).filter(Boolean)
+        );
       }
 
       setMapping({});
       setStep(2);
     } catch (err) {
       console.error(err);
-      setError("No se pudo leer el archivo");
+      setError("No se pudo leer el archivo.");
     }
   }
 
@@ -90,11 +122,18 @@ export default function ProductImportModal({ open, onClose, onSuccess }) {
     setMapping((prev) => ({ ...prev, [field]: column }));
   }
 
-  // ===============================
-  // Importar
-  // ===============================
   async function handleImport() {
-    if (!file || mappedCount === 0) return;
+    if (!file) {
+      setError("Selecciona un archivo antes de importar.");
+      return;
+    }
+
+    if (!isReferenceMapped) {
+      setError(
+        `Debes asignar una columna para ${referenceInfo.label} antes de importar.`
+      );
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -112,9 +151,7 @@ export default function ProductImportModal({ open, onClose, onSuccess }) {
       onSuccess?.();
     } catch (err) {
       console.error(err);
-      setError(
-        err.response?.data?.detail || "Error importando datos"
-      );
+      setError(err.response?.data?.detail || "Error importando datos.");
     } finally {
       setLoading(false);
     }
@@ -123,10 +160,8 @@ export default function ProductImportModal({ open, onClose, onSuccess }) {
   if (!open) return null;
 
   return (
-    <Modal open={open} onClose={onClose} title="Importación Masiva" size="lg">
+    <Modal open={open} onClose={onClose} title="Importacion masiva" size="lg">
       <div className="space-y-6">
-
-        {/* STEP INDICATOR */}
         <div className="flex items-center justify-between text-xs text-[#6B7280]">
           <span className={step === 1 ? "font-semibold text-[#002366]" : ""}>
             Paso 1 · Archivo
@@ -139,40 +174,48 @@ export default function ProductImportModal({ open, onClose, onSuccess }) {
           </span>
         </div>
 
-        {/* ===============================
-            PASO 1
-        =============================== */}
         {step === 1 && (
           <div className="space-y-4">
-
             <div>
-                <label className="text-sm font-medium text-[#374151]">
-                    Tipo de importación
-                </label>
-                <div className="mt-3">
-                    <div className="flex w-full rounded-lg border border-[#E5E7EB] overflow-hidden">
-                        {IMPORT_TYPES.map((type, index) => {
-                        const active = model === type.value;
+              <label className="text-sm font-medium text-[#374151]">
+                Tipo de importacion
+              </label>
 
-                        return (
-                            <button
-                            key={type.value}
-                            onClick={() => setModel(type.value)}
-                            className={`
-                                flex-1 px-4 py-3 text-sm font-semibold transition-all duration-200
-                                ${active
-                                ? "bg-[#002366] text-white"
-                                : "bg-white text-[#374151] hover:bg-[#F3F4F6]"
-                                }
-                                ${index !== IMPORT_TYPES.length - 1 ? "border-r border-[#E5E7EB]" : ""}
-                            `}
-                            >
-                            {type.label}
-                            </button>
-                        );
-                        })}
-                    </div>
+              <div className="mt-3">
+                <div className="flex w-full overflow-hidden rounded-lg border border-[#E5E7EB]">
+                  {IMPORT_TYPES.map((type, index) => {
+                    const active = model === type.value;
+
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => resetFlow(type.value)}
+                        className={[
+                          "flex-1 px-4 py-3 text-sm font-semibold transition-all duration-200",
+                          active
+                            ? "bg-[#002366] text-white"
+                            : "bg-white text-[#374151] hover:bg-[#F3F4F6]",
+                          index !== IMPORT_TYPES.length - 1
+                            ? "border-r border-[#E5E7EB]"
+                            : "",
+                        ].join(" ")}
+                      >
+                        {type.label}
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[#D7E3F8] bg-[#F5F8FF] p-4">
+              <p className="text-sm font-semibold text-[#002366]">
+                Campo de referencia: {referenceInfo.label}
+              </p>
+              <p className="mt-1 text-sm text-[#4B5563]">
+                {referenceInfo.description}
+              </p>
             </div>
 
             <div>
@@ -189,59 +232,90 @@ export default function ProductImportModal({ open, onClose, onSuccess }) {
           </div>
         )}
 
-        {/* ===============================
-            PASO 2
-        =============================== */}
         {step === 2 && (
           <div className="space-y-4">
-
             <div className="flex justify-between text-xs text-[#6B7280]">
               <span>
                 {mappedCount} de {fields.length} campos asignados
               </span>
               <button
+                type="button"
                 onClick={() => setStep(1)}
-                className="text-[#002366]"
+                className="font-medium text-[#002366]"
               >
                 Cambiar archivo
               </button>
             </div>
 
-            <div className="space-y-3">
-              {fields.map((field) => (
-                <div key={field} className="flex gap-4 items-center">
-                  <div className="w-40 text-sm text-[#374151]">
-                    {field}
-                  </div>
-
-                  <select
-                    value={mapping[field] || ""}
-                    onChange={(e) =>
-                      handleMappingChange(field, e.target.value)
-                    }
-                    className="flex-1 border border-[#D1D5DB] rounded-md px-3 py-2 text-sm"
-                  >
-                    <option value="">No importar</option>
-                    {columns.map((col) => (
-                      <option key={col} value={col}>
-                        {col}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
+            <div
+              className={[
+                "rounded-xl border p-4",
+                isReferenceMapped
+                  ? "border-[#D7E3F8] bg-[#F5F8FF]"
+                  : "border-[#F3C7C7] bg-[#FFF7F7]",
+              ].join(" ")}
+            >
+              <p className="text-sm font-semibold text-[#002366]">
+                Referencia usada para crear o actualizar: {referenceInfo.label}
+              </p>
+              <p className="mt-1 text-sm text-[#4B5563]">
+                {isReferenceMapped
+                  ? `Columna seleccionada: ${referenceColumn}`
+                  : `Aun no asignaste una columna para ${referenceInfo.label}.`}
+              </p>
+              {model === "product" && (
+                <p className="mt-2 text-xs text-[#6B7280]">
+                  Recomendacion: mapea tambien el campo <strong>name</strong> si
+                  quieres crear productos nuevos cuando el SKU no exista.
+                </p>
+              )}
             </div>
 
-            <div className="flex justify-end pt-4 border-t">
+            <div className="space-y-3">
+              {fields.map((field) => {
+                const isReferenceField = field === referenceInfo.field;
+
+                return (
+                  <div key={field} className="flex items-center gap-4">
+                    <div className="w-40 text-sm font-medium text-[#374151]">
+                      <span>{field}</span>
+                      {isReferenceField && (
+                        <span className="ml-2 rounded-full bg-[#DCE8FF] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#002366]">
+                          Referencia
+                        </span>
+                      )}
+                    </div>
+
+                    <select
+                      value={mapping[field] || ""}
+                      onChange={(e) =>
+                        handleMappingChange(field, e.target.value)
+                      }
+                      className="flex-1 rounded-md border border-[#D1D5DB] px-3 py-2 text-sm"
+                    >
+                      <option value="">No importar</option>
+                      {columns.map((column) => (
+                        <option key={column} value={column}>
+                          {column}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end border-t pt-4">
               <Button
+                type="button"
                 onClick={handleImport}
-                disabled={loading}
-                className="bg-[#002366] text-white"
+                disabled={!canImport}
+                className="bg-[#002366] text-white hover:bg-[#001A4D] disabled:bg-[#002366] disabled:text-white disabled:opacity-100"
               >
                 {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="mr-2 h-4 w-4" />
                 )}
                 Importar
               </Button>
@@ -249,49 +323,39 @@ export default function ProductImportModal({ open, onClose, onSuccess }) {
           </div>
         )}
 
-        {/* ===============================
-            PASO 3
-        =============================== */}
         {step === 3 && result && (
           <div className="space-y-4 text-sm">
-
-            <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-green-700">
               <p className="font-semibold">{result.detail}</p>
+              <p className="mt-1">
+                Campo de referencia usado:{" "}
+                {result.reference_label || referenceInfo.label}
+              </p>
 
-              {result.created !== undefined && (
-                <p>Creado(s): {result.created}</p>
-              )}
-
+              {result.created !== undefined && <p>Creado(s): {result.created}</p>}
               {result.updated !== undefined && (
                 <p>Actualizado(s): {result.updated}</p>
               )}
+              {result.skipped !== undefined && <p>Omitido(s): {result.skipped}</p>}
             </div>
 
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cerrar
               </Button>
 
               <Button
-                className="bg-[#002366] text-white"
-                onClick={() => {
-                  setStep(1);
-                  setFile(null);
-                  setColumns([]);
-                  setMapping({});
-                  setResult(null);
-                }}
+                type="button"
+                className="bg-[#002366] text-white hover:bg-[#001A4D]"
+                onClick={() => resetFlow(model)}
               >
-                Nueva Importación
+                Nueva importacion
               </Button>
             </div>
           </div>
         )}
 
-        {error && (
-          <div className="text-sm text-red-600">{error}</div>
-        )}
-
+        {error && <div className="text-sm text-red-600">{error}</div>}
       </div>
     </Modal>
   );

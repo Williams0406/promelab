@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 const PUBLIC_ROUTES = [
   "/",
   "/login",
+  "/cart",
   "/products",
   "/product",
 ];
