@@ -253,7 +253,7 @@ export default function HomePage() {
                 </div>
 
                 <Link
-                  href="https://wa.me/51972719164"
+                  href="https://wa.me/51930286436"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group inline-flex items-center justify-center gap-3

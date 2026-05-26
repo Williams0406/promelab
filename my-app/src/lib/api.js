@@ -266,6 +266,7 @@ export const adminAPI = {
   // --------------------------
   getCarts: (params) => api.get("/admin/carts/", { params }),
   deleteCart: (id) => api.delete(`/admin/carts/${id}/`),
+  bulkDeleteCarts: (ids) => api.post("/admin/carts/bulk-delete/", { ids }),
   convertCartToOrder: (id) =>
     api.post(`/admin/carts/${id}/convert_to_order/`),
 

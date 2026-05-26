@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Facebook, Instagram } from "lucide-react";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -10,7 +11,7 @@ export default function Footer() {
       <div className="container-promelab py-14">
         
         {/* GRID HORIZONTAL */}
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
 
           {/* PROMELAB */}
           <div>
@@ -31,15 +32,6 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-[#6B7280]">
               <li><Link href="/about">Nosotros</Link></li>
               <li><Link href="/contact">Contacto</Link></li>
-            </ul>
-          </div>
-
-          {/* SOPORTE */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold text-[#374151]">
-              Soporte
-            </h3>
-            <ul className="space-y-2 text-sm text-[#6B7280]">
               <li><Link href="/help">Centro de ayuda</Link></li>
             </ul>
           </div>
@@ -63,17 +55,26 @@ export default function Footer() {
                   Cercado de Lima – Lima, Perú
                 </a>
               </li>
-              <li className="text-xs leading-relaxed pt-2">
+              <li className="flex items-center gap-4 pt-2 text-[#6B7280]">
                 <a
-                  href="https://www.google.com/maps/place/Jr.+Libertad+338,+Huancayo+12001/@-12.0711277,-75.2203302,3407m/data=!3m1!1e3!4m6!3m5!1s0x910e96457d131181:0x5e4f3c0a53bce7d6!8m2!3d-12.0695221!4d-75.2129634!16s%2Fg%2F11f12rn7xl?authuser=0&entry=ttu&g_ep=EgoyMDI1MTIwOS4wIKXMDSoASAFQAw%3D%3D"
+                  href="https://www.instagram.com/promelabeirl/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-[#002366] transition-colors"
+                  aria-label="Instagram PROMELAB"
+                  className="transition-colors hover:text-[#E1306C]"
                 >
-                  Jr Libertad 338 – Huancayo, Perú
+                  <Instagram className="h-5 w-5" />
+                </a>
+                <a
+                  href="https://www.facebook.com/profile.php?id=100065149624575"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook PROMELAB"
+                  className="transition-colors hover:text-[#1877F2]"
+                >
+                  <Facebook className="h-5 w-5" />
                 </a>
               </li>
-
             </ul>
           </div>
         </div>

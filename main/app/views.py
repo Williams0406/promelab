@@ -120,12 +120,7 @@ class ProductViewSet(ReadOnlyModelViewSet):
         # 🔍 SEARCH
         search = self.request.query_params.get("search")
         if search:
-            queryset = queryset.filter(
-                Q(sku__icontains=search) |
-                Q(name__icontains=search) |
-                Q(description__icontains=search) |
-                Q(vendor__name__icontains=search)
-            )
+            queryset = queryset.filter(name__icontains=search)
 
         # 📂 CATEGORY
         category_id = self.request.query_params.get("category")
@@ -846,6 +841,39 @@ class CartAdminViewSet(ModelViewSet):
             {"message": "Orden creada correctamente"},
             status=status.HTTP_201_CREATED
         )
+
+    @action(detail=False, methods=["post"], url_path="bulk-delete")
+    def bulk_delete(self, request):
+        ids = request.data.get("ids")
+
+        if not isinstance(ids, list) or not ids:
+            raise ValidationError({
+                "detail": "Debes enviar una lista de IDs para eliminar."
+            })
+
+        carts = Cart.objects.filter(id__in=ids).prefetch_related("cartitem_set")
+        carts_by_id = {str(cart.id): cart for cart in carts}
+
+        deleted = 0
+        missing = []
+
+        for raw_id in ids:
+            cart_id = str(raw_id)
+            cart = carts_by_id.get(cart_id)
+
+            if not cart:
+                missing.append(cart_id)
+                continue
+
+            cart.cartitem_set.all().delete()
+            cart.delete()
+            deleted += 1
+
+        return Response({
+            "detail": "Carritos eliminados correctamente.",
+            "deleted": deleted,
+            "missing": missing,
+        })
 
     def perform_destroy(self, instance):
         instance.cartitem_set.all().delete()

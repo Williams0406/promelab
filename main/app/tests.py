@@ -6,8 +6,9 @@ from django.test import TestCase, override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 import pandas as pd
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Cart, Product, Vendor
+from .models import Cart, CartItem, Product, Vendor
 
 
 User = get_user_model()
@@ -245,3 +246,107 @@ class PublicProductPaginationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["count"], 13)
         self.assertEqual(len(response.data["results"]), 12)
+
+
+@override_settings(ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1"])
+class PublicProductSearchTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.vendor = Vendor.objects.create(name="Proveedor Search")
+
+        self.name_match = Product.objects.create(
+            vendor=self.vendor,
+            name="Microscopio Analitico",
+            sku="BUS-001",
+            description="Equipo de laboratorio",
+            technical_specs={"tipo": "optico"},
+            price="20.00",
+            is_active=True,
+        )
+        Product.objects.create(
+            vendor=self.vendor,
+            name="Centrifuga Clinica",
+            sku="MICRO-002",
+            description="Incluye modulo para microscopio",
+            technical_specs={"tipo": "centrifuga"},
+            price="25.00",
+            is_active=True,
+        )
+
+    def test_public_search_filters_only_by_product_name(self):
+        response = self.client.get("/api/products/?search=microscopio")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["id"], str(self.name_match.id))
+
+
+@override_settings(ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1"])
+class CartAdminBulkDeleteTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="admin-carts",
+            email="admin-carts@castromonte.com",
+            password="Admin12345!",
+            role=User.Role.ADMIN,
+            is_staff=True,
+            is_active=True,
+        )
+        self.client.force_authenticate(user=self.user)
+
+        self.vendor = Vendor.objects.create(name="Proveedor Carritos")
+        self.product = Product.objects.create(
+            vendor=self.vendor,
+            name="Producto carrito",
+            sku="CART-001",
+            description="Producto para prueba de carritos",
+            technical_specs={"tipo": "demo"},
+            price="15.00",
+            created_by=self.user,
+        )
+
+        self.cart_one = Cart.objects.create(user=self.user)
+        self.cart_two = Cart.objects.create()
+
+        CartItem.objects.create(
+            cart=self.cart_one,
+            product=self.product,
+            quantity=2,
+            price_snapshot="15.00",
+        )
+        CartItem.objects.create(
+            cart=self.cart_two,
+            product=self.product,
+            quantity=1,
+            price_snapshot="15.00",
+        )
+
+    def test_cart_bulk_delete_removes_selected_carts(self):
+        response = self.client.post(
+            "/api/admin/carts/bulk-delete/",
+            {"ids": [str(self.cart_one.id), str(self.cart_two.id)]},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["deleted"], 2)
+        self.assertFalse(Cart.objects.filter(id=self.cart_one.id).exists())
+        self.assertFalse(Cart.objects.filter(id=self.cart_two.id).exists())
+        self.assertEqual(CartItem.objects.count(), 0)
+
+
+class SessionLifetimeTests(TestCase):
+    def test_refresh_token_lasts_three_days(self):
+        user = User.objects.create_user(
+            username="session-user",
+            email="session@castromonte.com",
+            password="Admin12345!",
+            role=User.Role.CLIENT,
+            is_active=True,
+        )
+
+        token = RefreshToken.for_user(user)
+        lifetime_seconds = token["exp"] - token["iat"]
+
+        self.assertEqual(lifetime_seconds, 60 * 60 * 24 * 3)

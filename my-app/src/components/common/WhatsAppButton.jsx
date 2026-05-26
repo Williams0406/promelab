@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-const WHATSAPP_NUMBER = "51972719164";
+const WHATSAPP_NUMBER = "51930286436";
 const WHATSAPP_MESSAGE = "Hola, necesito información sobre productos PROMELAB";
 
 export default function WhatsAppButton() {

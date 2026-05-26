@@ -7,6 +7,7 @@
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 const USER_KEY = "user";
+const ACCESS_TOKEN_COOKIE_MAX_AGE = 60 * 60 * 24 * 3;
 
 /**
  * ============================
@@ -14,6 +15,22 @@ const USER_KEY = "user";
  * ============================
  */
 const isBrowser = () => typeof window !== "undefined";
+
+const setAccessTokenCookie = (token) => {
+  if (!isBrowser()) return;
+
+  document.cookie = [
+    `access_token=${token}`,
+    "path=/",
+    `Max-Age=${ACCESS_TOKEN_COOKIE_MAX_AGE}`,
+    "SameSite=Lax",
+  ].join("; ");
+};
+
+const clearAccessTokenCookie = () => {
+  if (!isBrowser()) return;
+  document.cookie = "access_token=; Max-Age=0; path=/; SameSite=Lax";
+};
 
 export const getAccessToken = () =>
   isBrowser() ? localStorage.getItem(ACCESS_TOKEN_KEY) : null;
@@ -23,7 +40,10 @@ export const getRefreshToken = () =>
 
 export const setTokens = ({ access, refresh }) => {
   if (!isBrowser()) return;
-  if (access) localStorage.setItem(ACCESS_TOKEN_KEY, access);
+  if (access) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, access);
+    setAccessTokenCookie(access);
+  }
   if (refresh) localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
 };
 
@@ -32,6 +52,7 @@ export const clearTokens = () => {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  clearAccessTokenCookie();
 };
 
 /**

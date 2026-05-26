@@ -35,11 +35,7 @@ export default function Header() {
   const showAdminPanel = user && (isAdmin || isStaff);
 
   useEffect(() => {
-    if (searchQuery.trim().length < 2) {
-      setResults([]);
-      setShowResults(false);
-      return;
-    }
+    if (searchQuery.trim().length < 2) return;
 
     const timer = setTimeout(() => {
       setSearching(true);
@@ -75,6 +71,16 @@ export default function Header() {
     setSearchQuery("");
     setShowResults(false);
     router.push(`/products/${slug}`);
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchQuery(value);
+
+    if (value.trim().length < 2) {
+      setSearching(false);
+      setResults([]);
+      setShowResults(false);
+    }
   };
 
   const handleSearch = () => {
@@ -119,7 +125,7 @@ export default function Header() {
             {/* Redes sociales — accesibles pero no intrusivas */}
             <div className="flex items-center gap-3 ml-2">
               <a
-                href="https://www.instagram.com/promelab"
+                href="https://www.instagram.com/promelabeirl/"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram PROMELAB"
@@ -128,7 +134,7 @@ export default function Header() {
                 <Instagram className="h-4 w-4" />
               </a>
               <a
-                href="https://www.facebook.com/promelab"
+                href="https://www.facebook.com/profile.php?id=100065149624575"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook PROMELAB"
@@ -160,9 +166,9 @@ export default function Header() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7280]" />
               <Input
                 type="search"
-                placeholder="Buscar por código, marca o especificación técnica..."
+                placeholder="Buscar productos por nombre..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="pl-10 h-10 border-[#E5E7EB] focus:border-[#00A8CC] focus:ring-1 focus:ring-[#00A8CC] transition-colors duration-150"
               />
@@ -309,9 +315,9 @@ export default function Header() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7280]" />
             <Input
               type="search"
-              placeholder="Buscar productos..."
+              placeholder="Buscar productos por nombre..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               onKeyPress={handleKeyPress}
               className="pl-10 h-10 border-[#E5E7EB]"
             />

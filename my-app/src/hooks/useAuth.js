@@ -54,8 +54,6 @@ export function AuthProvider({ children }) {
         setUserState(data.user);
       }
 
-      document.cookie = `access_token=${data.access}; path=/;`;
-
       return { success: true };
     } catch (error) {
       console.error("Login error:", error);
@@ -74,8 +72,6 @@ export function AuthProvider({ children }) {
         setUser(data.user);
         setUserState(data.user);
       }
-
-      document.cookie = `access_token=${data.access}; path=/;`;
 
       return { success: true, isNewUser: !!data?.is_new_user };
     } catch (error) {
@@ -101,7 +97,6 @@ export function AuthProvider({ children }) {
       console.error("Logout error:", err);
     } finally {
       setUserState(null);
-      document.cookie = "access_token=; Max-Age=0; path=/;";
       window.location.href = "/login";
     }
   }, []);
