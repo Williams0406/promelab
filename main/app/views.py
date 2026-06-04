@@ -11,7 +11,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.text import slugify
-from django.db.models import Count, Sum, Q
+from django.db.models import Count, Sum, Q, Max
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 from django.utils import timezone
@@ -53,6 +53,12 @@ User = get_user_model()
 
 class PublicProductPagination(PageNumberPagination):
     page_size = 12
+
+
+class CartAdminPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
 # ======================
 # CATEGORY
@@ -350,6 +356,8 @@ class CartViewSet(ModelViewSet):
             item.quantity += quantity
             item.save()
 
+        cart.save(update_fields=["updated_at"])
+
         return Response(
             CartSerializer(cart, context={"request": request}).data,
             status=status.HTTP_201_CREATED
@@ -547,10 +555,16 @@ class CartItemViewSet(ModelViewSet):
 
         item.quantity = quantity
         item.save()
+        item.cart.save(update_fields=["updated_at"])
 
         return Response(
             CartItemSerializer(item, context={"request": request}).data
         )
+
+    def perform_destroy(self, instance):
+        cart = instance.cart
+        instance.delete()
+        cart.save(update_fields=["updated_at"])
 
 class StaffAdminViewSet(ModelViewSet):
     """
@@ -772,13 +786,15 @@ class CartAdminViewSet(ModelViewSet):
     serializer_class = CartAdminSerializer
     permission_classes = [IsStaff]
     http_method_names = ["get", "delete", "post", "head", "options"]
+    pagination_class = CartAdminPagination
 
     def get_queryset(self):
         qs = (
             Cart.objects
             .select_related("user")
             .prefetch_related("cartitem_set__product")
-            .order_by("-created_at")
+            .annotate(last_item_activity_at=Max("cartitem__updated_at"))
+            .order_by("-updated_at", "-created_at")
         )
 
         params = self.request.query_params

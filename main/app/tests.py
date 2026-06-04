@@ -1,9 +1,12 @@
 import json
+from datetime import timedelta
 from io import BytesIO
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 import pandas as pd
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -334,6 +337,63 @@ class CartAdminBulkDeleteTests(TestCase):
         self.assertFalse(Cart.objects.filter(id=self.cart_one.id).exists())
         self.assertFalse(Cart.objects.filter(id=self.cart_two.id).exists())
         self.assertEqual(CartItem.objects.count(), 0)
+
+    def test_cart_admin_list_is_paginated(self):
+        response = self.client.get("/api/admin/carts/?page_size=1")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 2)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertIsNotNone(response.data["next"])
+
+    def test_cleanup_guest_carts_removes_only_inactive_guest_carts(self):
+        cutoff_date = timezone.now() - timedelta(days=2)
+
+        recent_item_cart = Cart.objects.create()
+        recent_item = CartItem.objects.create(
+            cart=recent_item_cart,
+            product=self.product,
+            quantity=1,
+            price_snapshot="15.00",
+        )
+
+        old_user_cart = Cart.objects.create(user=self.user)
+        old_user_item = CartItem.objects.create(
+            cart=old_user_cart,
+            product=self.product,
+            quantity=1,
+            price_snapshot="15.00",
+        )
+
+        Cart.objects.filter(id=self.cart_two.id).update(
+            created_at=cutoff_date,
+            updated_at=cutoff_date,
+        )
+        CartItem.objects.filter(cart=self.cart_two).update(
+            created_at=cutoff_date,
+            updated_at=cutoff_date,
+        )
+
+        Cart.objects.filter(id=recent_item_cart.id).update(
+            created_at=cutoff_date,
+            updated_at=cutoff_date,
+        )
+        CartItem.objects.filter(id=recent_item.id).update(updated_at=timezone.now())
+
+        Cart.objects.filter(id=old_user_cart.id).update(
+            created_at=cutoff_date,
+            updated_at=cutoff_date,
+        )
+        CartItem.objects.filter(id=old_user_item.id).update(
+            created_at=cutoff_date,
+            updated_at=cutoff_date,
+        )
+
+        call_command("cleanup_guest_carts")
+
+        self.assertFalse(Cart.objects.filter(id=self.cart_two.id).exists())
+        self.assertTrue(Cart.objects.filter(id=recent_item_cart.id).exists())
+        self.assertTrue(Cart.objects.filter(id=old_user_cart.id).exists())
 
 
 class SessionLifetimeTests(TestCase):

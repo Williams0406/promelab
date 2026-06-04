@@ -396,6 +396,7 @@ class CartAdminSerializer(serializers.ModelSerializer):
 
     total = serializers.SerializerMethodField()
     total_items = serializers.SerializerMethodField()
+    last_activity_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Cart
@@ -407,6 +408,8 @@ class CartAdminSerializer(serializers.ModelSerializer):
             "total",
             "total_items",
             "created_at",
+            "updated_at",
+            "last_activity_at",
         ]
 
     def get_total(self, obj):
@@ -420,6 +423,15 @@ class CartAdminSerializer(serializers.ModelSerializer):
             item.quantity
             for item in obj.cartitem_set.all()
         )
+
+    def get_last_activity_at(self, obj):
+        item_dates = [
+            item.updated_at or item.created_at
+            for item in obj.cartitem_set.all()
+            if item.updated_at or item.created_at
+        ]
+        dates = [obj.updated_at or obj.created_at, *item_dates]
+        return max(date for date in dates if date)
 
 class CategoryPublicTreeSerializer(serializers.ModelSerializer):
     children = serializers.SerializerMethodField()

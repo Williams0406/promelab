@@ -1,30 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, Trash2 } from "lucide-react";
+import { useState } from "react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Trash2,
+} from "lucide-react";
 
 import Table from "@/components/ui/Table";
 import { adminAPI } from "@/lib/api";
 
-export default function CartTable({ carts, onRefresh }) {
+export default function CartTable({
+  carts,
+  onRefresh,
+  page,
+  pageSize,
+  pagination,
+  selectedIds,
+  setSelectedIds,
+  onPageChange,
+  onPageSizeChange,
+}) {
   const [converting, setConverting] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [selectedIds, setSelectedIds] = useState([]);
 
-  useEffect(() => {
-    const validIds = new Set(carts.map((cart) => cart.id));
-    setSelectedIds((prev) => prev.filter((id) => validIds.has(id)));
-  }, [carts]);
+  const totalCount = pagination?.count || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const currentPageIds = carts.map((cart) => cart.id);
+  const allPageSelected =
+    currentPageIds.length > 0 &&
+    currentPageIds.every((id) => selectedIds.includes(id));
 
-  const allSelected = carts.length > 0 && selectedIds.length === carts.length;
+  const firstItem = totalCount ? (page - 1) * pageSize + 1 : 0;
+  const lastItem = totalCount ? Math.min(page * pageSize, totalCount) : 0;
 
   const toggleSelectAll = () => {
-    if (allSelected) {
-      setSelectedIds([]);
+    if (allPageSelected) {
+      setSelectedIds((prev) =>
+        prev.filter((id) => !currentPageIds.includes(id))
+      );
       return;
     }
 
-    setSelectedIds(carts.map((cart) => cart.id));
+    setSelectedIds((prev) => Array.from(new Set([...prev, ...currentPageIds])));
   };
 
   const toggleSelectCart = (cartId) => {
@@ -41,6 +61,7 @@ export default function CartTable({ carts, onRefresh }) {
     try {
       setConverting(cart.id);
       await adminAPI.convertCartToOrder(cart.id);
+      setSelectedIds((prev) => prev.filter((id) => id !== cart.id));
       onRefresh();
     } catch (error) {
       alert("Error al convertir carrito");
@@ -86,6 +107,20 @@ export default function CartTable({ carts, onRefresh }) {
     }
   };
 
+  const renderDate = (date) => (
+    <div className="text-sm">
+      <p className="font-medium text-[#374151]">
+        {new Date(date).toLocaleDateString("es-PE")}
+      </p>
+      <p className="text-xs text-[#6B7280]">
+        {new Date(date).toLocaleTimeString("es-PE", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </p>
+    </div>
+  );
+
   const columns = [
     {
       key: "select",
@@ -93,9 +128,9 @@ export default function CartTable({ carts, onRefresh }) {
         <div className="flex justify-center">
           <input
             type="checkbox"
-            checked={allSelected}
+            checked={allPageSelected}
             onChange={toggleSelectAll}
-            aria-label="Seleccionar todos los carritos"
+            aria-label="Seleccionar todos los carritos de esta pagina"
             className="h-4 w-4 rounded border-[#CBD5E1] text-[#002366] focus:ring-[#002366]"
           />
         </div>
@@ -115,7 +150,7 @@ export default function CartTable({ carts, onRefresh }) {
     },
     {
       key: "id",
-      label: "Código",
+      label: "Codigo",
       cell: (row) => (
         <span className="font-mono text-sm text-[#002366]">
           #{row.original.id.slice(0, 8)}
@@ -156,20 +191,14 @@ export default function CartTable({ carts, onRefresh }) {
     },
     {
       key: "created_at",
-      label: "Fecha",
-      cell: (row) => (
-        <div className="text-sm">
-          <p className="font-medium text-[#374151]">
-            {new Date(row.original.created_at).toLocaleDateString("es-PE")}
-          </p>
-          <p className="text-xs text-[#6B7280]">
-            {new Date(row.original.created_at).toLocaleTimeString("es-PE", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        </div>
-      ),
+      label: "Creado",
+      cell: (row) => renderDate(row.original.created_at),
+    },
+    {
+      key: "last_activity_at",
+      label: "Actividad",
+      cell: (row) =>
+        renderDate(row.original.last_activity_at || row.original.updated_at),
     },
     {
       key: "actions",
@@ -208,30 +237,87 @@ export default function CartTable({ carts, onRefresh }) {
       <div className="flex flex-col gap-3 rounded-xl border border-[#E5E7EB] bg-white p-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-sm font-semibold text-[#002366]">
-            Selección múltiple de carritos
+            Seleccion multiple de carritos
           </p>
           <p className="text-sm text-[#6B7280]">
             {selectedIds.length > 0
-              ? `${selectedIds.length} carrito(s) seleccionado(s)`
+              ? `${selectedIds.length} carrito(s) seleccionado(s) entre todas las paginas`
               : "Selecciona uno o varios carritos para eliminarlos en grupo."}
           </p>
         </div>
 
-        <button
-          onClick={handleBulkDelete}
-          disabled={selectedIds.length === 0 || deleting}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#E5533D] px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-[#C63F2B] disabled:cursor-not-allowed disabled:bg-[#F2A8A0]"
-        >
-          {deleting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Trash2 className="h-4 w-4" />
-          )}
-          Eliminar seleccionados
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedIds([])}
+            disabled={selectedIds.length === 0 || deleting}
+            className="inline-flex items-center justify-center rounded-lg border border-[#CBD5E1] px-4 py-2 text-sm font-medium text-[#374151] transition-colors duration-150 hover:bg-[#F5F7FA] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Limpiar seleccion
+          </button>
+
+          <button
+            onClick={handleBulkDelete}
+            disabled={selectedIds.length === 0 || deleting}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#E5533D] px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-[#C63F2B] disabled:cursor-not-allowed disabled:bg-[#F2A8A0]"
+          >
+            {deleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            Eliminar seleccionados
+          </button>
+        </div>
       </div>
 
       <Table columns={columns} data={carts} />
+
+      <div className="flex flex-col gap-3 rounded-lg border border-[#E5E7EB] bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
+        <p className="text-sm text-[#6B7280]">
+          Mostrando {firstItem}-{lastItem} de {totalCount} carritos
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-[#374151]">
+            Por pagina
+            <select
+              value={pageSize}
+              onChange={(event) => onPageSizeChange(Number(event.target.value))}
+              className="rounded-lg border border-[#CBD5E1] bg-white px-2 py-1 text-sm text-[#374151] focus:border-[#002366] focus:outline-none focus:ring-1 focus:ring-[#002366]"
+            >
+              {[10, 25, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onPageChange(Math.max(1, page - 1))}
+              disabled={!pagination?.previous || deleting}
+              aria-label="Pagina anterior"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#CBD5E1] text-[#374151] transition-colors duration-150 hover:bg-[#F5F7FA] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            <span className="min-w-24 text-center text-sm font-medium text-[#374151]">
+              Pagina {page} de {totalPages}
+            </span>
+
+            <button
+              onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+              disabled={!pagination?.next || deleting}
+              aria-label="Pagina siguiente"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#CBD5E1] text-[#374151] transition-colors duration-150 hover:bg-[#F5F7FA] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

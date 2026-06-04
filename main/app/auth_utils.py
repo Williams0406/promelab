@@ -78,12 +78,13 @@ def merge_session_cart_to_user(request, user):
 
         if existing:
             existing.quantity += item.quantity
-            existing.save(update_fields=["quantity"])
+            existing.save(update_fields=["quantity", "updated_at"])
             continue
 
         item.cart = user_cart
         item.save(update_fields=["cart"])
 
+    user_cart.save(update_fields=["updated_at"])
     session_cart.delete()
 
 
