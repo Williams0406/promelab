@@ -9,9 +9,18 @@ import { NextResponse } from "next/server";
 const PUBLIC_ROUTES = [
   "/",
   "/login",
+  "/about",
+  "/contact",
+  "/help",
   "/cart",
   "/products",
   "/product",
+];
+
+const PUBLIC_FILES = [
+  "/robots.txt",
+  "/sitemap.xml",
+  "/manifest.webmanifest",
 ];
 
 const ADMIN_BASE = "/admin";
@@ -26,6 +35,9 @@ const isPublicRoute = (pathname) =>
   PUBLIC_ROUTES.some((route) =>
     pathname === route || pathname.startsWith(route + "/")
   );
+
+const isPublicFile = (pathname) =>
+  PUBLIC_FILES.includes(pathname);
 
 const isAdminRoute = (pathname) =>
   pathname.startsWith(ADMIN_BASE);
@@ -47,7 +59,8 @@ export function middleware(request) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
-    pathname.startsWith("/favicon.ico")
+    pathname.startsWith("/favicon.ico") ||
+    isPublicFile(pathname)
   ) {
     return NextResponse.next();
   }
@@ -87,5 +100,7 @@ export function middleware(request) {
  * ============================
  */
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest).*)",
+  ],
 };
