@@ -42,7 +42,7 @@ export default function Footer() {
               Contacto
             </h3>
             <ul className="space-y-2 text-sm text-[#6B7280]">
-              <li>+51 972 719 164</li>
+              <li>+51 930 286 436</li>
               <li>ventas@promelab.com</li>
               <li className="text-xs leading-relaxed pt-2">
                 <a

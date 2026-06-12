@@ -30,7 +30,7 @@ export default function PaymentYapeModal({ open, onClose, total }) {
 
         {/* Datos */}
         <div className="text-sm space-y-2">
-          <p><strong>Número:</strong> 962 162 027</p>
+          <p><strong>Número:</strong> 930 286 436</p>
           <p><strong>Monto:</strong> S/ {total.toFixed(2)}</p>
         </div>
 

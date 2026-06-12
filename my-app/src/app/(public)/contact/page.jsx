@@ -50,7 +50,7 @@ export default function ContactPage() {
                       href="tel:+51972171964"
                       className="text-[#374151] hover:text-[#00A8CC] transition-colors duration-150"
                     >
-                      +51 972 719 164
+                      +51 930 286 436
                     </a>
                   </div>
                 </div>

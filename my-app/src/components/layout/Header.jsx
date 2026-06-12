@@ -104,7 +104,7 @@ export default function Header() {
           <div className="flex items-center gap-6 text-[#6B7280]">
             <span className="flex items-center gap-2">
               <span className="font-medium text-[#002366]">Teléfono:</span>
-              +51 972 719 164
+              +51 930 286 436
             </span>
             <span className="flex items-center gap-2">
               <span className="font-medium text-[#002366]">Correo:</span>
