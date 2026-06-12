@@ -2,6 +2,7 @@ import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 import { Inter } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const siteUrl = "https://corporacionpromelab.com";
 const siteName = "Corporación Promelab";
@@ -122,6 +123,7 @@ export default function RootLayout({ children }) {
             {children}
           </CartProvider>
         </AuthProvider>
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
       </body>
     </html>
   );
